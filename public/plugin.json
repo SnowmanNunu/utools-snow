@@ -1,0 +1,19 @@
+{
+  "main": "index.html",
+  "logo": "logo.png",
+  "preload": "preload.js",
+  "features": [
+    {
+      "code": "snow",
+      "explain": "满屏飘落 - 唯美治愈桌面粒子特效",
+      "icon": "logo.svg",
+      "cmds": [
+        "满屏飘落",
+        "大雪纷飞",
+        "下雪",
+        "xiaxue",
+        "snow"
+      ]
+    }
+  ]
+}
