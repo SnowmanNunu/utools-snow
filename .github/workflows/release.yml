@@ -1,0 +1,187 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Install standalone dependencies
+        working-directory: ./standalone
+        run: npm ci
+
+      - name: Build Windows portable
+        working-directory: ./standalone
+        run: npx electron-builder --win
+        env:
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: standalone/release/*.exe
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Install standalone dependencies
+        working-directory: ./standalone
+        run: npm ci
+
+      - name: Build macOS dmg
+        working-directory: ./standalone
+        run: npx electron-builder --mac
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: standalone/release/*.dmg
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y icnsutils graphicsmagick
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Install standalone dependencies
+        working-directory: ./standalone
+        run: npm ci
+
+      - name: Build Linux AppImage
+        working-directory: ./standalone
+        run: npx electron-builder --linux
+        env:
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: standalone/release/*.AppImage
+
+  release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: ls -R artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: 满屏飘落 ${{ github.ref_name }}
+          body: |
+            ## 🎉 满屏飘落 ${{ github.ref_name }}
+
+            唯美治愈桌面粒子特效，为你的屏幕增添浪漫氛围。
+
+            ---
+
+            ### ✨ 更新内容
+
+            详见 [CHANGELOG](../CHANGELOG.md) 或下方版本说明。
+
+            ---
+
+            ### 📥 下载地址
+
+            #### Windows
+            - **便携版（推荐）**：`满屏飘落 ${{ github.ref_name }}.exe` — 双击即可运行，无需安装
+
+            #### macOS
+            - **DMG 安装包**：`满屏飘落-${{ github.ref_name }}.dmg`
+
+            #### Linux
+            - **AppImage**：`满屏飘落-${{ github.ref_name }}.AppImage` — 赋予执行权限后双击运行
+
+            ---
+
+            ### 🚀 快速开始
+
+            1. 根据你的系统下载对应版本
+            2. Windows：直接双击 `.exe` 运行
+            3. macOS：打开 `.dmg`，将应用拖入 Applications
+            4. Linux：`chmod +x *.AppImage` 后双击运行
+
+            ---
+
+            ### 📝 说明
+
+            - 独立桌面版无需安装 uTools
+            - 粒子窗口不影响桌面操作（鼠标可穿透）
+            - 任务栏托盘图标 + `Ctrl+Shift+S` 快捷键可随时呼出控制面板
+          files: |
+            artifacts/windows/*
+            artifacts/macos/*
+            artifacts/linux/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
