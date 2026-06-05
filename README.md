@@ -1,6 +1,6 @@
-# ❄️ 满屏飘落 — uTools 桌面粒子特效插件
+# ❄️ 满屏飘落 — 桌面粒子特效
 
-一款唯美治愈的 uTools 桌面粒子飘落插件，让你的屏幕随时上演大雪纷飞、樱花飘落、星光闪烁的浪漫场景。
+一款唯美治愈的桌面粒子飘落插件，让你的屏幕随时上演大雪纷飞、樱花飘落、星光闪烁的浪漫场景。
 
 ![logo](public/logo.svg)
 
@@ -20,7 +20,7 @@
   - 风力：无风微风到强风（0 ~ 3 级）
   - 强度预设：小雪 / 中雪 / 大雪一键切换
 
-- **趣味交互**
+- **趣味交互**（uTools 版支持）
   - 🖱️ **鼠标推开** — 粒子会感应鼠标位置并温柔避让
   - ✨ **点击绽放** — 在屏幕上点击会爆开一团粒子
 
@@ -29,11 +29,16 @@
   - 发光辉光与闪烁动画
   - 支持系统深色/浅色模式自动适配
 
-## 🖼️ 预览
+## 🖼️ 两种使用方式
 
-进入插件后，默认自动开始飘落。点击界面中的「开始飘落」/「停止飘落」按钮随时控制。
+| 方式 | 特点 | 适用场景 |
+|------|------|---------|
+| **uTools 插件版** | 呼出即用，支持鼠标交互 | 已安装 uTools 的用户 |
+| **独立桌面版** | 双击运行，无需任何依赖 | 未安装 uTools 的用户 |
 
-## 🚀 部署安装
+---
+
+## 🚀 一、uTools 插件版
 
 ### 前置要求
 
@@ -73,11 +78,60 @@ webpack 会监视文件变化并自动重新构建，方便开发调试。
 
 > 提示：uTools 插件开发详情可参考 [官方文档](https://u.tools/docs/)。
 
+---
+
+## 💻 二、独立桌面版（无需 uTools）
+
+双击即可运行，不依赖任何外部环境。
+
+### 快速开始
+
+```bash
+# 1. 先构建插件源码
+cd utools-snow-src
+npm install
+npm run build
+
+# 2. 安装 Electron 并启动独立版
+cd standalone
+npm install
+npm start
+```
+
+> 如果 Electron 下载慢，可先设置镜像：
+> `npm config set electron_mirror https://npmmirror.com/mirrors/electron/`
+
+### 打包成可执行文件
+
+```bash
+cd standalone
+npm run build
+```
+
+打包完成后在 `standalone/release/` 目录生成：
+- **Windows**: `满屏飘落 1.0.0.exe`（便携版，双击运行）
+- **macOS**: `满屏飘落.dmg`
+- **Linux**: `满屏飘落.AppImage`
+
+### 独立版使用说明
+
+1. 双击运行后弹出**控制面板**
+2. 点击「开始飘落」在桌面开启全屏粒子特效
+3. 粒子窗口**不影响桌面操作**（鼠标可穿透到下层软件）
+4. 随时通过以下方式控制：
+   - 控制面板的「停止飘落」按钮
+   - 任务栏右下角 ❄️ **托盘图标** → 右键菜单
+   - 快捷键 **`Ctrl + Shift + S`** 显示/隐藏控制面板
+
+> 注意：独立版为不影响桌面操作，暂不支持鼠标交互（鼠标推开 / 点击绽放）。
+
+---
+
 ## 📁 项目结构
 
 ```
 utools-snow-src/
-├── public/                 # 静态资源（直接复制到 dist）
+├── public/                 # 静态资源
 │   ├── index.html          # 设置面板入口
 │   ├── snow.html           # 飘落窗口页面
 │   ├── snow.js             # Canvas 粒子核心动画
@@ -85,11 +139,16 @@ utools-snow-src/
 │   ├── plugin.json         # uTools 插件配置
 │   └── logo.*              # 插件图标
 ├── src/                    # React 设置面板源码
-│   ├── App.js              # 主界面（密度/风力/图案控制）
+│   ├── App.js              # 主界面
 │   ├── index.js            # React 入口
 │   └── index.less          # 样式
 ├── bridge/
-│   └── preload.js          # 主窗口 preload（暴露 services API）
+│   └── preload.js          # uTools 版 preload
+├── standalone/             # 独立桌面版
+│   ├── main.js             # Electron 主进程
+│   ├── preload.js          # 模拟 uTools API
+│   ├── package.json        # 独立版打包配置
+│   └── README.md           # 独立版说明
 ├── webpack.config.js       # 构建配置
 └── package.json
 ```
@@ -99,7 +158,7 @@ utools-snow-src/
 - **设置面板**：React 19 + MUI 7 + Emotion
 - **粒子渲染**：原生 Canvas 2D API，无需任何图形库
 - **构建工具**：Webpack 5 + Babel 7
-- **插件框架**：uTools Plugin API
+- **独立版框架**：Electron 31
 
 ## 📝 配置说明
 
@@ -123,6 +182,17 @@ utools-snow-src/
 
 你可以通过修改 `cmds` 来添加自己喜欢的呼出关键词。
 
+## 📦 版本历史
+
+### v1.0.0（2026-06-05）
+
+- ✨ 首发上线，支持 7 种精美粒子飘落图案
+- 🎚️ 实时调节粒子密度与风力，三档强度预设一键切换
+- 🖱️ uTools 版支持鼠标交互（推开 / 点击绽放）
+- 💻 新增独立桌面版，无需 uTools 即可双击运行
+- 🌙 自动适配系统深色 / 浅色模式
+- ⚡ 基于原生 Canvas 2D 渲染，流畅低耗，全平台兼容
+
 ## 🤝 参与贡献
 
 欢迎提交 Issue 和 PR！如果你有任何新点子（比如新增粒子图案、更多交互效果），随时来聊。
@@ -133,4 +203,4 @@ utools-snow-src/
 
 ---
 
-> 愿你的桌面四季有雪，心中有光 ❄️
+> 愿你的桌面四季有景，心中有光 ❄️
