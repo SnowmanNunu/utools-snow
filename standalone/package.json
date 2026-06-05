@@ -16,6 +16,7 @@
     "appId": "com.snowman.snow",
     "productName": "满屏飘落",
     "icon": "dist/logo.png",
+    "artifactName": "snow-desktop-${version}-${arch}.${ext}",
     "directories": {
       "output": "release"
     },
