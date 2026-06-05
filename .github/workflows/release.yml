@@ -20,17 +20,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
       - name: Install root dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build plugin
         run: npm run build
 
+      - name: Copy dist & public to standalone
+        run: |
+          cp -r dist standalone/dist
+          cp -r public standalone/public
+
       - name: Install standalone dependencies
         working-directory: ./standalone
-        run: npm ci
+        run: npm install
 
       - name: Build Windows portable
         working-directory: ./standalone
@@ -54,17 +58,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
       - name: Install root dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build plugin
         run: npm run build
 
+      - name: Copy dist & public to standalone
+        run: |
+          cp -r dist standalone/dist
+          cp -r public standalone/public
+
       - name: Install standalone dependencies
         working-directory: ./standalone
-        run: npm ci
+        run: npm install
 
       - name: Build macOS dmg
         working-directory: ./standalone
@@ -89,7 +97,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
       - name: Install system dependencies
         run: |
@@ -97,14 +104,19 @@ jobs:
           sudo apt-get install -y icnsutils graphicsmagick
 
       - name: Install root dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build plugin
         run: npm run build
 
+      - name: Copy dist & public to standalone
+        run: |
+          cp -r dist standalone/dist
+          cp -r public standalone/public
+
       - name: Install standalone dependencies
         working-directory: ./standalone
-        run: npm ci
+        run: npm install
 
       - name: Build Linux AppImage
         working-directory: ./standalone
@@ -122,9 +134,6 @@ jobs:
     needs: [build-windows, build-macos, build-linux]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
