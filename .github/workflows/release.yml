@@ -162,13 +162,13 @@ jobs:
             ### 📥 下载地址
 
             #### Windows
-            - **便携版（推荐）**：`满屏飘落 ${{ github.ref_name }}.exe` — 双击即可运行，无需安装
+            - **便携版（推荐）**：`snow-desktop-${{ github.ref_name }}-x64.exe` — 双击即可运行，无需安装
 
             #### macOS
-            - **DMG 安装包**：`满屏飘落-${{ github.ref_name }}.dmg`
+            - **DMG 安装包**：`snow-desktop-${{ github.ref_name }}-arm64.dmg`
 
             #### Linux
-            - **AppImage**：`满屏飘落-${{ github.ref_name }}.AppImage` — 赋予执行权限后双击运行
+            - **AppImage**：`snow-desktop-${{ github.ref_name }}-x64.AppImage` — 赋予执行权限后双击运行
 
             ---
 
