@@ -8,7 +8,7 @@ const path = require('path')
 let controlWindow = null
 let snowWindow = null
 
-const DIST_DIR = path.join(__dirname, '../dist')
+const DIST_DIR = path.join(__dirname, 'dist')
 
 function createControlWindow () {
   controlWindow = new BrowserWindow({

@@ -1,5 +1,10 @@
 node_modules/
 dist/
+standalone/node_modules/
+standalone/dist/
+standalone/public/
+standalone/release/
+*.exe
 
 .DS_Store
 Thumbs.db
