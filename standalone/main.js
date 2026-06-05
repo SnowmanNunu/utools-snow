@@ -2,15 +2,22 @@
  * 满屏飘落 — 独立桌面版主进程
  * 不依赖 uTools，纯 Electron 运行
  */
-const { app, BrowserWindow, ipcMain, screen } = require('electron')
+const { app, BrowserWindow, ipcMain, screen, Tray, Menu, globalShortcut } = require('electron')
 const path = require('path')
 
 let controlWindow = null
 let snowWindow = null
+let tray = null
 
 const DIST_DIR = path.join(__dirname, 'dist')
 
 function createControlWindow () {
+  if (controlWindow && !controlWindow.isDestroyed()) {
+    controlWindow.focus()
+    controlWindow.show()
+    return
+  }
+
   controlWindow = new BrowserWindow({
     width: 400,
     height: 680,
@@ -19,6 +26,7 @@ function createControlWindow () {
     minHeight: 600,
     title: '满屏飘落',
     icon: path.join(DIST_DIR, 'logo.png'),
+    alwaysOnTop: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: false,
@@ -30,9 +38,7 @@ function createControlWindow () {
 
   controlWindow.on('closed', function () {
     controlWindow = null
-    if (snowWindow && !snowWindow.isDestroyed()) {
-      snowWindow.close()
-    }
+    closeSnowWindow()
   })
 }
 
@@ -50,7 +56,10 @@ function createSnowWindow (config) {
     transparent: true,
     alwaysOnTop: true,
     skipTaskbar: true,
-    fullscreen: true,
+    // 关键修复 1：禁用全屏独占，改用普通窗口铺满屏幕
+    fullscreen: false,
+    // 关键修复 2：禁止获取焦点，避免抢占键盘输入
+    focusable: false,
     resizable: false,
     movable: false,
     minimizable: false,
@@ -69,6 +78,9 @@ function createSnowWindow (config) {
   snowWindow.once('ready-to-show', function () {
     snowWindow.show()
     snowWindow.setAlwaysOnTop(true, 'screen-saver')
+    // 关键修复 3：鼠标穿透到下层桌面，只在有粒子的局部区域响应
+    // forward: true 会把事件继续传递给下层窗口
+    snowWindow.setIgnoreMouseEvents(true, { forward: true })
     if (config) {
       snowWindow.webContents.send('snow-config', config)
     }
@@ -82,38 +94,103 @@ function createSnowWindow (config) {
   })
 }
 
-// IPC: 创建/显示下雪窗口
+function closeSnowWindow () {
+  if (snowWindow && !snowWindow.isDestroyed()) {
+    snowWindow.close()
+  }
+  snowWindow = null
+}
+
+function createTray () {
+  tray = new Tray(path.join(DIST_DIR, 'logo.png'))
+  updateTrayMenu()
+  tray.setToolTip('满屏飘落')
+  tray.on('click', function () {
+    if (controlWindow && !controlWindow.isDestroyed()) {
+      controlWindow.focus()
+      controlWindow.show()
+    } else {
+      createControlWindow()
+    }
+  })
+}
+
+function updateTrayMenu () {
+  const running = snowWindow !== null && !snowWindow.isDestroyed()
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: running ? '❄️ 正在飘落' : '⏹️ 已停止',
+      enabled: false
+    },
+    { type: 'separator' },
+    {
+      label: '打开控制面板',
+      click: function () {
+        createControlWindow()
+      }
+    },
+    {
+      label: running ? '停止飘落' : '开始飘落',
+      click: function () {
+        if (running) {
+          closeSnowWindow()
+        } else {
+          createSnowWindow()
+        }
+        updateTrayMenu()
+      }
+    },
+    { type: 'separator' },
+    {
+      label: '退出',
+      click: function () {
+        app.quit()
+      }
+    }
+  ])
+  tray.setContextMenu(contextMenu)
+}
+
+// IPC handlers
 ipcMain.on('create-snow', function (event, config) {
   if (!snowWindow || snowWindow.isDestroyed()) {
     createSnowWindow(config)
+    updateTrayMenu()
   } else {
     snowWindow.webContents.send('snow-config', config)
-    snowWindow.focus()
   }
 })
 
-// IPC: 更新配置
 ipcMain.on('update-snow-config', function (event, config) {
   if (snowWindow && !snowWindow.isDestroyed()) {
     snowWindow.webContents.send('snow-config', config)
   }
 })
 
-// IPC: 关闭下雪窗口
 ipcMain.on('close-snow', function () {
-  if (snowWindow && !snowWindow.isDestroyed()) {
-    snowWindow.close()
-  }
-  snowWindow = null
+  closeSnowWindow()
+  updateTrayMenu()
 })
 
-// IPC: 查询运行状态
 ipcMain.handle('is-snow-running', function () {
   return snowWindow !== null && !snowWindow.isDestroyed()
 })
 
 app.whenReady().then(function () {
   createControlWindow()
+  createTray()
+
+  // 全局快捷键 Ctrl+Shift+S：显示/隐藏控制面板
+  globalShortcut.register('CommandOrControl+Shift+S', function () {
+    if (controlWindow && !controlWindow.isDestroyed()) {
+      if (controlWindow.isVisible()) {
+        controlWindow.hide()
+      } else {
+        controlWindow.show()
+        controlWindow.focus()
+      }
+    }
+  })
 
   app.on('activate', function () {
     if (controlWindow === null) {
@@ -122,6 +199,11 @@ app.whenReady().then(function () {
   })
 })
 
+app.on('will-quit', function () {
+  globalShortcut.unregisterAll()
+})
+
 app.on('window-all-closed', function () {
+  // 控制面板关闭后自动退出整个应用
   app.quit()
 })
