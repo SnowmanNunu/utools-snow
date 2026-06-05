@@ -20,6 +20,7 @@
     "directories": {
       "output": "release"
     },
+    "compression": "maximum",
     "files": [
       "main.js",
       "preload.js",
