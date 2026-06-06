@@ -23,6 +23,7 @@
     "less": "^4.4.2",
     "less-loader": "^12.3.0",
     "png-to-ico": "^3.0.1",
+    "sharp": "^0.34.5",
     "style-loader": "^4.0.0",
     "webpack": "^5.102.1",
     "webpack-cli": "^6.0.1"
