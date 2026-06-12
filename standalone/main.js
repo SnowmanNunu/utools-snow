@@ -11,6 +11,41 @@ let tray = null
 
 const DIST_DIR = path.join(__dirname, 'dist')
 
+const DEFAULT_CONFIG = {
+  density: 150,
+  wind: 0.5,
+  pattern: 'snow',
+  minSize: 2,
+  maxSize: 6,
+  minSpeed: 0.3,
+  maxSpeed: 1.8,
+  swayAmount: 0.8,
+  opacityMin: 0.3,
+  opacityMax: 0.9,
+  burstOnClick: true,
+  interaction: true
+}
+
+let currentConfig = { ...DEFAULT_CONFIG }
+
+const PATTERN_LABELS = {
+  snow: '❄️ 雪花',
+  star: '⭐ 星星',
+  heart: '💗 爱心',
+  petal: '🌸 花瓣',
+  bubble: '🫧 泡泡',
+  maple: '🍁 枫叶',
+  note: '🎵 音符',
+  packet: '🧧 红包',
+  butterfly: '🦋 蝴蝶',
+  text: '📝 福字',
+  rain: '💧 雨滴',
+  gold: '🪙 金元宝',
+  firefly: '✨ 萤火虫',
+  lantern: '🏮 灯笼',
+  dandelion: '🌼 蒲公英'
+}
+
 function createControlWindow () {
   if (controlWindow && !controlWindow.isDestroyed()) {
     controlWindow.focus()
@@ -43,6 +78,9 @@ function createControlWindow () {
 }
 
 function createSnowWindow (config) {
+  if (config) {
+    currentConfig = { ...currentConfig, ...config }
+  }
   const primaryDisplay = screen.getPrimaryDisplay()
   const { x, y, width, height } = primaryDisplay.bounds
 
@@ -81,8 +119,8 @@ function createSnowWindow (config) {
     // 关键修复 3：鼠标穿透到下层桌面，只在有粒子的局部区域响应
     // forward: true 会把事件继续传递给下层窗口
     snowWindow.setIgnoreMouseEvents(true, { forward: true })
-    if (config) {
-      snowWindow.webContents.send('snow-config', config)
+    if (currentConfig) {
+      snowWindow.webContents.send('snow-config', currentConfig)
     }
   })
 
@@ -117,6 +155,23 @@ function createTray () {
 
 function updateTrayMenu () {
   const running = snowWindow !== null && !snowWindow.isDestroyed()
+  const patternMenu = Object.keys(PATTERN_LABELS).map(function (pattern) {
+    return {
+      label: PATTERN_LABELS[pattern],
+      type: 'checkbox',
+      checked: currentConfig.pattern === pattern,
+      click: function () {
+        currentConfig.pattern = pattern
+        if (running) {
+          snowWindow.webContents.send('snow-config', { pattern: pattern })
+        } else {
+          createSnowWindow(currentConfig)
+        }
+        updateTrayMenu()
+      }
+    }
+  })
+
   const contextMenu = Menu.buildFromTemplate([
     {
       label: running ? '❄️ 正在飘落' : '⏹️ 已停止',
@@ -135,10 +190,15 @@ function updateTrayMenu () {
         if (running) {
           closeSnowWindow()
         } else {
-          createSnowWindow()
+          createSnowWindow(currentConfig)
         }
         updateTrayMenu()
       }
+    },
+    { type: 'separator' },
+    {
+      label: '🎨 切换图案',
+      submenu: patternMenu
     },
     { type: 'separator' },
     {
@@ -162,9 +222,13 @@ ipcMain.on('create-snow', function (event, config) {
 })
 
 ipcMain.on('update-snow-config', function (event, config) {
-  if (snowWindow && !snowWindow.isDestroyed()) {
-    snowWindow.webContents.send('snow-config', config)
+  if (config) {
+    currentConfig = { ...currentConfig, ...config }
   }
+  if (snowWindow && !snowWindow.isDestroyed()) {
+    snowWindow.webContents.send('snow-config', currentConfig)
+  }
+  updateTrayMenu()
 })
 
 ipcMain.on('close-snow', function () {

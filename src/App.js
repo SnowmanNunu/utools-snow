@@ -16,6 +16,9 @@ import WaterDropIcon from '@mui/icons-material/WaterDrop'
 import SpaIcon from '@mui/icons-material/Spa'
 import PaletteIcon from '@mui/icons-material/Palette'
 import TextFieldsIcon from '@mui/icons-material/TextFields'
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
+import FlareIcon from '@mui/icons-material/Flare'
+import WbIncandescentIcon from '@mui/icons-material/WbIncandescent'
 import WindPowerIcon from '@mui/icons-material/WindPower'
 import AirIcon from '@mui/icons-material/Air'
 import SpeedIcon from '@mui/icons-material/Speed'
@@ -78,7 +81,11 @@ const PATTERN_OPTIONS = [
   { value: 'packet', label: '红包', icon: <CardGiftcardIcon fontSize='small' /> },
   { value: 'butterfly', label: '蝴蝶', icon: <PaletteIcon fontSize='small' /> },
   { value: 'text', label: '福字', icon: <TextFieldsIcon fontSize='small' /> },
-  { value: 'mix', label: '混合', icon: <AutoAwesomeIcon fontSize='small' /> }
+  { value: 'rain', label: '雨滴', icon: <WaterDropIcon fontSize='small' /> },
+  { value: 'gold', label: '金元宝', icon: <MonetizationOnIcon fontSize='small' /> },
+  { value: 'firefly', label: '萤火虫', icon: <FlareIcon fontSize='small' /> },
+  { value: 'lantern', label: '灯笼', icon: <WbIncandescentIcon fontSize='small' /> },
+  { value: 'dandelion', label: '蒲公英', icon: <SpaIcon fontSize='small' /> }
 ]
 
 export default function App () {
@@ -255,7 +262,7 @@ export default function App () {
             size='small'
             sx={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
               gap: 0.75,
               '& .MuiToggleButtonGroup-grouped': {
                 border: 1,
