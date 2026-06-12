@@ -147,6 +147,33 @@
     }
   }
 
+  const THEMES = {
+    spring: {
+      label: '春节',
+      pattern: 'lantern',
+      density: 180,
+      wind: 0.4,
+      opacityMin: 0.55,
+      opacityMax: 1
+    },
+    christmas: {
+      label: '圣诞',
+      pattern: 'snow',
+      density: 160,
+      wind: 0.7,
+      opacityMin: 0.45,
+      opacityMax: 0.95
+    },
+    valentine: {
+      label: '情人节',
+      pattern: 'heart',
+      density: 150,
+      wind: 0.3,
+      opacityMin: 0.4,
+      opacityMax: 0.9
+    }
+  }
+
   let config = {
     density: 150,
     wind: 0.5,
@@ -159,7 +186,8 @@
     opacityMin: 0.3,
     opacityMax: 0.9,
     burstOnClick: true,
-    interaction: true
+    interaction: true,
+    audioReactive: false
   }
 
   let particles = []
@@ -179,6 +207,58 @@
   let lightningAlpha = 0
   let nextLightning = 3000 + Math.random() * 5000
   let lightningTimer = 0
+
+  // 音效联动：麦克风音频分析
+  let audioContext = null
+  let audioAnalyser = null
+  let audioSource = null
+  let audioDataArray = null
+  let audioLevel = 0
+  let audioLevelSmooth = 0
+
+  function initAudioReactive () {
+    if (audioContext || !navigator.mediaDevices) return
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)()
+      audioAnalyser = audioContext.createAnalyser()
+      audioAnalyser.fftSize = 256
+      audioSource = audioContext.createMediaStreamSource(stream)
+      audioSource.connect(audioAnalyser)
+      audioDataArray = new Uint8Array(audioAnalyser.frequencyBinCount)
+    }).catch(function (err) {
+      console.warn('无法获取麦克风权限，音效联动不可用:', err)
+    })
+  }
+
+  function stopAudioReactive () {
+    if (audioSource) {
+      audioSource.disconnect()
+      audioSource = null
+    }
+    if (audioContext) {
+      audioContext.close()
+      audioContext = null
+    }
+    audioAnalyser = null
+    audioDataArray = null
+    audioLevel = 0
+    audioLevelSmooth = 0
+  }
+
+  function updateAudioLevel () {
+    if (!audioAnalyser || !audioDataArray) {
+      audioLevel = 0
+      audioLevelSmooth = 0
+      return
+    }
+    audioAnalyser.getByteFrequencyData(audioDataArray)
+    let sum = 0
+    for (let i = 0; i < audioDataArray.length; i++) {
+      sum += audioDataArray[i]
+    }
+    audioLevel = (sum / audioDataArray.length) / 255
+    audioLevelSmooth = audioLevelSmooth * 0.85 + audioLevel * 0.15
+  }
 
   function pick (list) {
     return list[Math.floor(Math.random() * list.length)]
@@ -808,8 +888,10 @@
     ctx.restore()
   }
 
-  function updateParticle (particle, windForce, deltaSec, timeSec) {
-    particle.y += particle.speed * 60 * deltaSec
+  function updateParticle (particle, windForce, deltaSec, timeSec, audioBoost) {
+    const speedMul = 1 + (audioBoost || 0) * 0.6
+    const swayMul = 1 + (audioBoost || 0) * 1.2
+    particle.y += particle.speed * 60 * deltaSec * speedMul
     const sway = Math.sin(timeSec * particle.swaySpeed + particle.swayOffset)
     let effectiveWind = windForce
 
@@ -825,8 +907,8 @@
       }
     }
 
-    particle.x += sway * particle.swayAmount * 30 * deltaSec + effectiveWind * 40 * deltaSec
-    particle.rotation += particle.rotationSpeed * deltaSec
+    particle.x += sway * particle.swayAmount * swayMul * 30 * deltaSec + effectiveWind * 40 * deltaSec
+    particle.rotation += particle.rotationSpeed * deltaSec * (1 + (audioBoost || 0) * 0.5)
     particle.twinkle = 0.82 + Math.sin(timeSec * 1.5 + particle.swayOffset) * 0.08 + particle.detail * 0.08
 
     if (particle.y > height + 40) {
@@ -986,6 +1068,21 @@
 
     ctx.clearRect(0, 0, width, height)
 
+    // 音效联动：分析麦克风音量
+    updateAudioLevel()
+    let audioBoost = 0
+    if (config.audioReactive && audioLevelSmooth > 0.12) {
+      audioBoost = (audioLevelSmooth - 0.12) * 2.5
+      // 音量大时随机爆发粒子
+      if (Math.random() < audioBoost * 0.2) {
+        addBurst(
+          Math.random() * width,
+          Math.random() * height * 0.6,
+          4 + Math.floor(audioBoost * 8)
+        )
+      }
+    }
+
     // 雨夜闪电效果（仅在雨滴模式下）
     if (config.pattern === 'rain') {
       updateLightning(deltaSec)
@@ -997,10 +1094,10 @@
     const windVariation = Math.sin(timestamp * 0.0003) * 0.3 +
       Math.sin(timestamp * 0.0007) * 0.2 +
       Math.cos(timestamp * 0.0011) * 0.15
-    const windForce = config.wind + windVariation
+    const windForce = config.wind + windVariation + audioBoost * 0.8
 
     for (const particle of particles) {
-      updateParticle(particle, windForce, deltaSec, timeSec)
+      updateParticle(particle, windForce, deltaSec, timeSec, audioBoost)
       drawParticle(particle)
     }
 
@@ -1046,8 +1143,32 @@
 
     const shouldRefresh = newConfig.pattern !== undefined ||
       newConfig.minSize !== undefined ||
-      newConfig.maxSize !== undefined
+      newConfig.maxSize !== undefined ||
+      newConfig.theme !== undefined
     Object.assign(config, newConfig)
+
+    // 音效联动开关
+    if (newConfig.audioReactive !== undefined) {
+      if (config.audioReactive) {
+        initAudioReactive()
+      } else {
+        stopAudioReactive()
+      }
+    }
+
+    // 节日主题包
+    if (newConfig.theme !== undefined && THEMES[newConfig.theme]) {
+      const theme = THEMES[newConfig.theme]
+      Object.assign(config, {
+        pattern: theme.pattern,
+        density: theme.density,
+        wind: theme.wind,
+        opacityMin: theme.opacityMin,
+        opacityMax: theme.opacityMax
+      })
+    } else if (newConfig.theme === null) {
+      // 取消主题，保留用户当前其他配置
+    }
 
     if (shouldRefresh) {
       initParticles()

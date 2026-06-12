@@ -19,6 +19,8 @@ import TextFieldsIcon from '@mui/icons-material/TextFields'
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
 import FlareIcon from '@mui/icons-material/Flare'
 import WbIncandescentIcon from '@mui/icons-material/WbIncandescent'
+import VolumeUpIcon from '@mui/icons-material/VolumeUp'
+import VolumeOffIcon from '@mui/icons-material/VolumeOff'
 import WindPowerIcon from '@mui/icons-material/WindPower'
 import AirIcon from '@mui/icons-material/Air'
 import SpeedIcon from '@mui/icons-material/Speed'
@@ -88,6 +90,18 @@ const PATTERN_OPTIONS = [
   { value: 'dandelion', label: '蒲公英', icon: <SpaIcon fontSize='small' /> }
 ]
 
+const THEME_OPTIONS = [
+  { value: 'spring', label: '春节', icon: <CardGiftcardIcon fontSize='small' /> },
+  { value: 'christmas', label: '圣诞', icon: <AcUnitIcon fontSize='small' /> },
+  { value: 'valentine', label: '情人节', icon: <FavoriteIcon fontSize='small' /> }
+]
+
+const THEME_MAP = {
+  spring: { pattern: 'lantern', density: 180, wind: 0.4 },
+  christmas: { pattern: 'snow', density: 160, wind: 0.7 },
+  valentine: { pattern: 'heart', density: 150, wind: 0.3 }
+}
+
 export default function App () {
   const [theme, setTheme] = useState(
     window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
@@ -99,6 +113,8 @@ export default function App () {
   const [intensity, setIntensity] = useState('normal')
   const [interaction, setInteraction] = useState(DEFAULT_CONFIG.interaction)
   const [burstOnClick, setBurstOnClick] = useState(DEFAULT_CONFIG.burstOnClick)
+  const [festivalTheme, setFestivalTheme] = useState(null)
+  const [audioReactive, setAudioReactive] = useState(false)
 
   const configRef = useRef({ ...DEFAULT_CONFIG })
   const runningRef = useRef(false)
@@ -145,9 +161,14 @@ export default function App () {
   }
 
   function handlePatternChange (event, newPattern) {
-    if (newPattern === null) return
+    if (newPattern === null || newPattern === undefined) return
     setPattern(newPattern)
-    updateConfig({ pattern: newPattern })
+    if (festivalTheme) {
+      setFestivalTheme(null)
+      updateConfig({ pattern: newPattern, theme: null })
+    } else {
+      updateConfig({ pattern: newPattern })
+    }
   }
 
   function handleInteractionChange (event) {
@@ -160,6 +181,27 @@ export default function App () {
     const checked = event.target.checked
     setBurstOnClick(checked)
     updateConfig({ burstOnClick: checked })
+  }
+
+  function handleFestivalThemeChange (event, newTheme) {
+    if (!newTheme || newTheme === festivalTheme) {
+      setFestivalTheme(null)
+      updateConfig({ theme: null })
+      return
+    }
+    const cfg = THEME_MAP[newTheme]
+    if (!cfg) return
+    setFestivalTheme(newTheme)
+    setPattern(cfg.pattern)
+    setDensity(cfg.density)
+    setWind(cfg.wind)
+    updateConfig({ theme: newTheme, pattern: cfg.pattern, density: cfg.density, wind: cfg.wind })
+  }
+
+  function handleAudioReactiveChange (event) {
+    const checked = event.target.checked
+    setAudioReactive(checked)
+    updateConfig({ audioReactive: checked })
   }
 
   useEffect(function () {
@@ -285,6 +327,31 @@ export default function App () {
 
         <Box>
           <Stack direction='row' alignItems='center' spacing={1} mb={0.75}>
+            <AutoAwesomeIcon fontSize='small' color='action' />
+            <Typography variant='body2' color='text.secondary' fontWeight={700}>
+              节日主题
+            </Typography>
+          </Stack>
+          <ToggleButtonGroup
+            value={festivalTheme}
+            exclusive
+            onChange={handleFestivalThemeChange}
+            size='small'
+            fullWidth
+          >
+            {THEME_OPTIONS.map(function (item) {
+              return (
+                <ToggleButton key={item.value} value={item.value} sx={{ gap: 0.5, px: 0.75 }}>
+                  {item.icon}
+                  {item.label}
+                </ToggleButton>
+              )
+            })}
+          </ToggleButtonGroup>
+        </Box>
+
+        <Box>
+          <Stack direction='row' alignItems='center' spacing={1} mb={0.5}>
             <SpeedIcon fontSize='small' color='action' />
             <Typography variant='body2' color='text.secondary' fontWeight={700}>
               密度
@@ -363,6 +430,15 @@ export default function App () {
                 <Stack direction='row' spacing={0.75} alignItems='center'>
                   <AutoAwesomeIcon fontSize='small' />
                   <Typography variant='body2'>点击绽放</Typography>
+                </Stack>
+              }
+            />
+            <FormControlLabel
+              control={<Switch checked={audioReactive} onChange={handleAudioReactiveChange} size='small' />}
+              label={
+                <Stack direction='row' spacing={0.75} alignItems='center'>
+                  {audioReactive ? <VolumeUpIcon fontSize='small' /> : <VolumeOffIcon fontSize='small' />}
+                  <Typography variant='body2'>音效联动</Typography>
                 </Stack>
               }
             />
