@@ -10,6 +10,12 @@ import FavoriteIcon from '@mui/icons-material/Favorite'
 import LocalFloristIcon from '@mui/icons-material/LocalFlorist'
 import BubbleChartIcon from '@mui/icons-material/BubbleChart'
 import ParkIcon from '@mui/icons-material/Park'
+import MusicNoteIcon from '@mui/icons-material/MusicNote'
+import CardGiftcardIcon from '@mui/icons-material/CardGiftcard'
+import WaterDropIcon from '@mui/icons-material/WaterDrop'
+import SpaIcon from '@mui/icons-material/Spa'
+import PaletteIcon from '@mui/icons-material/Palette'
+import TextFieldsIcon from '@mui/icons-material/TextFields'
 import WindPowerIcon from '@mui/icons-material/WindPower'
 import AirIcon from '@mui/icons-material/Air'
 import SpeedIcon from '@mui/icons-material/Speed'
@@ -68,6 +74,10 @@ const PATTERN_OPTIONS = [
   { value: 'petal', label: '花瓣', icon: <LocalFloristIcon fontSize='small' /> },
   { value: 'bubble', label: '泡泡', icon: <BubbleChartIcon fontSize='small' /> },
   { value: 'maple', label: '枫叶', icon: <ParkIcon fontSize='small' /> },
+  { value: 'note', label: '音符', icon: <MusicNoteIcon fontSize='small' /> },
+  { value: 'packet', label: '红包', icon: <CardGiftcardIcon fontSize='small' /> },
+  { value: 'butterfly', label: '蝴蝶', icon: <PaletteIcon fontSize='small' /> },
+  { value: 'text', label: '福字', icon: <TextFieldsIcon fontSize='small' /> },
   { value: 'mix', label: '混合', icon: <AutoAwesomeIcon fontSize='small' /> }
 ]
 

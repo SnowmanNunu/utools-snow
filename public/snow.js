@@ -8,7 +8,7 @@
   const canvas = document.getElementById('snowCanvas')
   const ctx = canvas.getContext('2d')
 
-  const PATTERNS = ['snow', 'star', 'heart', 'petal', 'bubble', 'maple']
+  const PATTERNS = ['snow', 'star', 'heart', 'petal', 'bubble', 'maple', 'note', 'packet', 'butterfly', 'text']
   const PATTERN_PROFILE = {
     snow: {
       colors: ['#ffffff', '#f7fbff', '#dff2ff'],
@@ -63,6 +63,69 @@
       opacity: 0.9,
       sway: 1.65,
       rotation: 1.35
+    },
+    note: {
+      colors: ['#ffd700', '#ffec8b', '#fff8dc'],
+      glow: 'rgba(255, 215, 0, 0.72)',
+      speed: 0.9,
+      size: 1.2,
+      opacity: 0.92,
+      sway: 1.3,
+      rotation: 0.8
+    },
+    packet: {
+      colors: ['#ff4444', '#ff6b6b', '#ffd700'],
+      glow: 'rgba(255, 68, 68, 0.58)',
+      speed: 0.65,
+      size: 1.3,
+      opacity: 0.9,
+      sway: 1.2,
+      rotation: 0.6
+    },
+    feather: {
+      colors: ['#ffffff', '#f0f0f0', '#e8e8e8', '#fff8f0'],
+      glow: 'rgba(255, 255, 255, 0.45)',
+      speed: 0.42,
+      size: 1.5,
+      opacity: 0.78,
+      sway: 1.6,
+      rotation: 1.0
+    },
+    butterfly: {
+      colors: ['#ff9ff3', '#f368e0', '#ffcccc', '#a29bfe', '#74b9ff'],
+      glow: 'rgba(255, 159, 243, 0.52)',
+      speed: 0.55,
+      size: 1.3,
+      opacity: 0.85,
+      sway: 1.4,
+      rotation: 0.7
+    },
+    rain: {
+      colors: ['rgba(200, 230, 250, 0.95)', 'rgba(160, 210, 240, 0.9)', 'rgba(120, 190, 230, 0.85)'],
+      glow: 'rgba(180, 220, 255, 0.35)',
+      speed: 2.8,
+      size: 0.9,
+      opacity: 0.75,
+      sway: 0.2,
+      rotation: 0.08
+    },
+    gold: {
+      colors: ['#ffd700', '#ffec8b', '#daa520', '#fff8dc'],
+      glow: 'rgba(255, 215, 0, 0.72)',
+      speed: 0.75,
+      size: 1.35,
+      opacity: 0.92,
+      sway: 1.1,
+      rotation: 0.5
+    },
+    text: {
+      colors: ['#ffd700', '#ff8c00', '#ff4444'],
+      glow: 'rgba(255, 215, 0, 0.68)',
+      speed: 0.85,
+      size: 1.4,
+      opacity: 0.9,
+      sway: 1.1,
+      rotation: 0.3
     }
   }
 
@@ -91,6 +154,13 @@
   let width = 0
   let height = 0
   let lastTime = 0
+
+  // 雨滴特效：水花、涟漪、闪电
+  let splashes = []
+  let ripples = []
+  let lightningAlpha = 0
+  let nextLightning = 3000 + Math.random() * 5000
+  let lightningTimer = 0
 
   function pick (list) {
     return list[Math.floor(Math.random() * list.length)]
@@ -150,7 +220,8 @@
       twinkle: 0.82 + Math.random() * 0.22,
       stretch: 0.75 + Math.random() * 0.7,
       detail: Math.random(),
-      clusterDots: makeClusterDots(baseSize)
+      clusterDots: makeClusterDots(baseSize),
+      text: pattern === 'text' ? pick(['福', '吉', '喜', '财', '乐', '安']) : undefined
     }
   }
 
@@ -287,6 +358,159 @@
     ctx.stroke()
   }
 
+  function drawNote (r) {
+    ctx.beginPath()
+    ctx.ellipse(r * 0.4, r * 1.2, r * 0.55, r * 0.35, Math.PI / 6, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillRect(r * 0.75, -r * 1.6, r * 0.18, r * 2.9)
+    ctx.beginPath()
+    ctx.moveTo(r * 0.93, -r * 1.6)
+    ctx.quadraticCurveTo(r * 1.8, -r * 1.3, r * 1.6, -r * 0.6)
+    ctx.lineTo(r * 0.93, -r * 0.9)
+    ctx.fill()
+  }
+
+  function drawPacket (r) {
+    const w = r * 1.6
+    const h = r * 2.2
+    ctx.beginPath()
+    ctx.moveTo(-w, -h)
+    ctx.lineTo(w, -h)
+    ctx.lineTo(w, h)
+    ctx.lineTo(-w, h)
+    ctx.closePath()
+    ctx.fill()
+    ctx.beginPath()
+    ctx.moveTo(-w, -h)
+    ctx.quadraticCurveTo(0, -h * 0.4, w, -h)
+    ctx.fill()
+    ctx.strokeStyle = 'rgba(255, 215, 0, 0.9)'
+    ctx.lineWidth = Math.max(1, r * 0.2)
+    ctx.beginPath()
+    ctx.moveTo(0, -h * 0.25)
+    ctx.lineTo(0, h * 0.7)
+    ctx.stroke()
+    ctx.fillStyle = '#ffd700'
+    ctx.beginPath()
+    ctx.arc(0, 0, r * 0.45, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = '#ff4444'
+    ctx.font = `bold ${Math.floor(r * 0.5)}px serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('福', 0, 0)
+  }
+
+  function drawRain (r) {
+    // 逼真雨滴：stroke 圆润线段（参考 rain-animation.html）
+    ctx.lineCap = 'round'
+    ctx.lineWidth = Math.max(1.2, r * 0.55)
+    ctx.beginPath()
+    ctx.moveTo(0, -r * 0.8)
+    ctx.lineTo(0, r * 3.2)
+    ctx.stroke()
+  }
+
+  function drawFeather (r) {
+    // 羽毛：细长主体 + 两侧羽枝
+    ctx.lineWidth = r * 0.35
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    ctx.moveTo(0, -r * 2.8)
+    ctx.quadraticCurveTo(r * 0.15, 0, 0, r * 2.8)
+    ctx.stroke()
+    // 羽枝（左侧）
+    for (let i = 0; i < 6; i++) {
+      const y = -r * 2.0 + i * r * 0.75
+      ctx.beginPath()
+      ctx.moveTo(0, y)
+      ctx.quadraticCurveTo(-r * 0.9, y - r * 0.15, -r * 1.1, y + r * 0.35)
+      ctx.stroke()
+    }
+    // 羽枝（右侧）
+    for (let i = 0; i < 6; i++) {
+      const y = -r * 1.6 + i * r * 0.75
+      ctx.beginPath()
+      ctx.moveTo(0, y)
+      ctx.quadraticCurveTo(r * 0.9, y - r * 0.15, r * 1.1, y + r * 0.35)
+      ctx.stroke()
+    }
+  }
+
+  function drawButterfly (r) {
+    // 蝴蝶：对称翅膀 + 身体
+    const s = r * 0.9
+    // 左上翅
+    ctx.beginPath()
+    ctx.moveTo(0, -r * 0.3)
+    ctx.bezierCurveTo(-s * 1.8, -s * 2.2, -s * 2.2, -s * 0.3, -s * 0.9, r * 0.4)
+    ctx.bezierCurveTo(-s * 0.4, r * 0.2, -s * 0.2, -r * 0.1, 0, r * 0.6)
+    ctx.fill()
+    // 右上翅
+    ctx.beginPath()
+    ctx.moveTo(0, -r * 0.3)
+    ctx.bezierCurveTo(s * 1.8, -s * 2.2, s * 2.2, -s * 0.3, s * 0.9, r * 0.4)
+    ctx.bezierCurveTo(s * 0.4, r * 0.2, s * 0.2, -r * 0.1, 0, r * 0.6)
+    ctx.fill()
+    // 左下翅
+    ctx.beginPath()
+    ctx.moveTo(0, r * 0.5)
+    ctx.bezierCurveTo(-s * 1.2, r * 1.2, -s * 1.0, r * 2.0, -s * 0.3, r * 1.8)
+    ctx.bezierCurveTo(-s * 0.1, r * 1.4, -s * 0.05, r * 0.9, 0, r * 0.8)
+    ctx.fill()
+    // 右下翅
+    ctx.beginPath()
+    ctx.moveTo(0, r * 0.5)
+    ctx.bezierCurveTo(s * 1.2, r * 1.2, s * 1.0, r * 2.0, s * 0.3, r * 1.8)
+    ctx.bezierCurveTo(s * 0.1, r * 1.4, s * 0.05, r * 0.9, 0, r * 0.8)
+    ctx.fill()
+    // 身体
+    ctx.fillStyle = 'rgba(80, 60, 40, 0.8)'
+    ctx.beginPath()
+    ctx.ellipse(0, r * 0.5, r * 0.15, r * 0.9, 0, 0, Math.PI * 2)
+    ctx.fill()
+    // 触角
+    ctx.strokeStyle = 'rgba(80, 60, 40, 0.6)'
+    ctx.lineWidth = Math.max(0.5, r * 0.1)
+    ctx.beginPath()
+    ctx.moveTo(0, -r * 0.5)
+    ctx.quadraticCurveTo(-r * 0.5, -r * 1.4, -r * 0.7, -r * 1.6)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(0, -r * 0.5)
+    ctx.quadraticCurveTo(r * 0.5, -r * 1.4, r * 0.7, -r * 1.6)
+    ctx.stroke()
+  }
+
+  function drawGold (r) {
+    // 金元宝：底部宽椭圆底座 + 中间高鼓包 + 顶部开口
+    // 底座
+    ctx.beginPath()
+    ctx.ellipse(0, r * 0.3, r * 1.1, r * 0.45, 0, 0, Math.PI * 2)
+    ctx.fill()
+    // 中间鼓包
+    ctx.beginPath()
+    ctx.ellipse(0, -r * 0.1, r * 0.7, r * 0.48, 0, 0, Math.PI * 2)
+    ctx.fill()
+    // 顶部开口（深色椭圆凹槽）
+    ctx.fillStyle = 'rgba(180, 140, 20, 0.6)'
+    ctx.beginPath()
+    ctx.ellipse(0, -r * 0.35, r * 0.42, r * 0.18, 0, 0, Math.PI * 2)
+    ctx.fill()
+    // 高光
+    ctx.fillStyle = 'rgba(255, 255, 230, 0.5)'
+    ctx.beginPath()
+    ctx.ellipse(-r * 0.1, -r * 0.05, r * 0.25, r * 0.12, -Math.PI / 6, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  function drawText (r, particle) {
+    ctx.font = `bold ${Math.floor(r * 2.8)}px serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(particle.text || '福', 0, r * 0.2)
+  }
+
   function drawSnowCrystal (r) {
     ctx.lineWidth = r * 0.5
     ctx.lineCap = 'round'
@@ -361,6 +585,26 @@
         ctx.shadowBlur = r * 1.6
         drawMaple(r)
         break
+      case 'note':
+        ctx.shadowBlur = r * 2.5
+        drawNote(r)
+        break
+      case 'packet':
+        ctx.shadowBlur = r * 1.8
+        drawPacket(r)
+        break
+      case 'feather':
+        ctx.shadowBlur = r * 1.2
+        drawFeather(r)
+        break
+      case 'butterfly':
+        ctx.shadowBlur = r * 2.2
+        drawButterfly(r)
+        break
+      case 'text':
+        ctx.shadowBlur = r * 2
+        drawText(r, particle)
+        break
     }
     ctx.restore()
   }
@@ -387,6 +631,11 @@
     particle.twinkle = 0.82 + Math.sin(timeSec * 1.5 + particle.swayOffset) * 0.08 + particle.detail * 0.08
 
     if (particle.y > height + 40) {
+      // 雨滴碰底产生水花和涟漪
+      if (particle.type === 'rain' && Math.random() < 0.12) {
+        addSplash(particle.x, height, particle.r)
+        addRipple(particle.x, height, particle.r)
+      }
       Object.assign(particle, createParticle(Math.random() * width, -40, particle.layer))
     }
     if (particle.x > width + 70) particle.x = -70
@@ -415,6 +664,97 @@
     }
   }
 
+  // === 雨滴特效：水花、涟漪、闪电 ===
+  function addSplash (x, y, r) {
+    const count = 2 + Math.floor(Math.random() * 3)
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI
+      const speed = 0.8 + Math.random() * r * 0.4
+      splashes.push({
+        x: x,
+        y: y,
+        vx: Math.cos(angle) * speed * (Math.random() > 0.5 ? 1 : -1),
+        vy: -Math.sin(angle) * speed * 0.5,
+        life: 1,
+        decay: 0.02 + Math.random() * 0.03,
+        size: 0.5 + Math.random() * r * 0.2
+      })
+    }
+  }
+
+  function addRipple (x, y, r) {
+    ripples.push({
+      x: x,
+      y: y,
+      radius: 1,
+      maxRadius: 4 + r * 1.2,
+      life: 1,
+      decay: 0.015 + Math.random() * 0.02
+    })
+  }
+
+  function updateSplashes (deltaSec) {
+    for (let i = splashes.length - 1; i >= 0; i--) {
+      const s = splashes[i]
+      s.x += s.vx
+      s.y += s.vy
+      s.vy += 0.15
+      s.life -= s.decay
+      if (s.life <= 0) {
+        splashes.splice(i, 1)
+      }
+    }
+  }
+
+  function updateRipples (deltaSec) {
+    for (let i = ripples.length - 1; i >= 0; i--) {
+      const rp = ripples[i]
+      rp.radius += (rp.maxRadius - rp.radius) * 0.12
+      rp.life -= rp.decay
+      if (rp.life <= 0) {
+        ripples.splice(i, 1)
+      }
+    }
+  }
+
+  function drawSplashes () {
+    for (const s of splashes) {
+      ctx.beginPath()
+      ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2)
+      ctx.fillStyle = 'rgba(180, 210, 255, ' + (s.life * 0.5) + ')'
+      ctx.fill()
+    }
+  }
+
+  function drawRipples () {
+    for (const rp of ripples) {
+      ctx.beginPath()
+      ctx.arc(rp.x, rp.y, rp.radius, 0, Math.PI * 2)
+      ctx.strokeStyle = 'rgba(140, 200, 240, ' + (rp.life * 0.4) + ')'
+      ctx.lineWidth = 0.8
+      ctx.stroke()
+    }
+  }
+
+  function updateLightning (deltaSec) {
+    lightningTimer += deltaSec * 1000
+    if (lightningTimer > nextLightning) {
+      lightningAlpha = 0.25 + Math.random() * 0.25
+      lightningTimer = 0
+      nextLightning = 4000 + Math.random() * 8000
+    }
+    if (lightningAlpha > 0) {
+      lightningAlpha -= deltaSec * 1.2
+      if (lightningAlpha < 0) lightningAlpha = 0
+    }
+  }
+
+  function drawLightning () {
+    if (lightningAlpha <= 0) return
+    ctx.fillStyle = 'rgba(255, 255, 255, ' + lightningAlpha + ')'
+    ctx.fillRect(0, 0, width, height)
+  }
+
   function maintainDensity () {
     if (particles.length < config.density) {
       const toAdd = Math.min(config.density - particles.length, 4)
@@ -439,6 +779,13 @@
     const timeSec = timestamp * 0.001
 
     ctx.clearRect(0, 0, width, height)
+
+    // 雨夜闪电效果（仅在雨滴模式下）
+    if (config.pattern === 'rain') {
+      updateLightning(deltaSec)
+    }
+    drawLightning()
+
     drawBursts(deltaSec)
 
     const windVariation = Math.sin(timestamp * 0.0003) * 0.3 +
@@ -449,6 +796,14 @@
     for (const particle of particles) {
       updateParticle(particle, windForce, deltaSec, timeSec)
       drawParticle(particle)
+    }
+
+    // 雨滴碰底水花和涟漪
+    if (config.pattern === 'rain') {
+      updateSplashes(deltaSec)
+      updateRipples(deltaSec)
+      drawSplashes()
+      drawRipples()
     }
 
     maintainDensity()
