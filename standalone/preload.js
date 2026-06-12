@@ -37,6 +37,9 @@ const services = {
   updateSnowConfig: function (config) {
     ipcRenderer.send('update-snow-config', config)
   },
+  keyFeedback: function () {
+    ipcRenderer.send('key-feedback')
+  },
   closeSnowWindow: function () {
     ipcRenderer.send('close-snow')
     snowRunning = false

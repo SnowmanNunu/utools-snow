@@ -19,8 +19,6 @@ import TextFieldsIcon from '@mui/icons-material/TextFields'
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
 import FlareIcon from '@mui/icons-material/Flare'
 import WbIncandescentIcon from '@mui/icons-material/WbIncandescent'
-import VolumeUpIcon from '@mui/icons-material/VolumeUp'
-import VolumeOffIcon from '@mui/icons-material/VolumeOff'
 import WindPowerIcon from '@mui/icons-material/WindPower'
 import AirIcon from '@mui/icons-material/Air'
 import SpeedIcon from '@mui/icons-material/Speed'
@@ -63,7 +61,9 @@ const DEFAULT_CONFIG = {
   opacityMin: 0.3,
   opacityMax: 0.9,
   burstOnClick: true,
-  interaction: true
+  interaction: true,
+  snowAccumulation: true,
+  mouseVortex: true
 }
 
 const INTENSITY_MAP = {
@@ -114,7 +114,8 @@ export default function App () {
   const [interaction, setInteraction] = useState(DEFAULT_CONFIG.interaction)
   const [burstOnClick, setBurstOnClick] = useState(DEFAULT_CONFIG.burstOnClick)
   const [festivalTheme, setFestivalTheme] = useState(null)
-  const [audioReactive, setAudioReactive] = useState(false)
+  const [snowAccumulation, setSnowAccumulation] = useState(DEFAULT_CONFIG.snowAccumulation)
+  const [mouseVortex, setMouseVortex] = useState(DEFAULT_CONFIG.mouseVortex)
 
   const configRef = useRef({ ...DEFAULT_CONFIG })
   const runningRef = useRef(false)
@@ -198,10 +199,16 @@ export default function App () {
     updateConfig({ theme: newTheme, pattern: cfg.pattern, density: cfg.density, wind: cfg.wind })
   }
 
-  function handleAudioReactiveChange (event) {
+  function handleSnowAccumulationChange (event) {
     const checked = event.target.checked
-    setAudioReactive(checked)
-    updateConfig({ audioReactive: checked })
+    setSnowAccumulation(checked)
+    updateConfig({ snowAccumulation: checked })
+  }
+
+  function handleMouseVortexChange (event) {
+    const checked = event.target.checked
+    setMouseVortex(checked)
+    updateConfig({ mouseVortex: checked })
   }
 
   useEffect(function () {
@@ -244,55 +251,76 @@ export default function App () {
         display: 'flex',
         flexDirection: 'column',
         boxSizing: 'border-box',
-        p: 2.25,
-        gap: 1.75,
+        p: 2,
+        gap: 1.5,
         bgcolor: 'background.default'
       }}>
-        <Stack direction='row' alignItems='center' spacing={1.25}>
-          <AcUnitIcon sx={{ fontSize: 30, color: 'primary.main' }} />
-          <Box>
-            <Typography variant='h6' fontWeight={800} lineHeight={1.1}>
-              满屏飘落
-            </Typography>
-            <Typography variant='caption' color='text.secondary'>
-              唯美治愈桌面粒子
-            </Typography>
-          </Box>
-        </Stack>
-
+        {/* Header */}
         <Paper
           elevation={0}
           sx={{
             p: 1.5,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            justifyContent: 'space-between',
+            borderRadius: 3,
+            bgcolor: 'background.paper',
             border: 1,
-            borderColor: 'divider',
-            bgcolor: snowRunning ? 'action.hover' : 'primary.main'
+            borderColor: 'divider'
           }}
         >
+          <Stack direction='row' alignItems='center' spacing={1.25}>
+            <Box sx={{
+              width: 40,
+              height: 40,
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: 'primary.main',
+              color: '#fff'
+            }}>
+              <AcUnitIcon sx={{ fontSize: 24 }} />
+            </Box>
+            <Box>
+              <Typography variant='h6' fontWeight={800} lineHeight={1.1}>
+                满屏飘落
+              </Typography>
+              <Typography variant='caption' color='text.secondary'>
+                唯美治愈桌面粒子
+              </Typography>
+            </Box>
+          </Stack>
           <Button
             variant={snowRunning ? 'outlined' : 'contained'}
-            color={snowRunning ? 'error' : 'inherit'}
-            size='large'
+            color={snowRunning ? 'error' : 'primary'}
+            size='small'
             startIcon={snowRunning ? <StopIcon /> : <PlayArrowIcon />}
             onClick={snowRunning ? stopSnow : startSnow}
             sx={{
-              minWidth: 180,
-              fontSize: 15,
+              minWidth: 110,
               fontWeight: 700,
-              py: 0.9,
-              ...(snowRunning ? {} : { color: '#fff', bgcolor: 'primary.dark' })
+              borderRadius: 2,
+              px: 1.5
             }}
           >
-            {snowRunning ? '停止飘落' : '开始飘落'}
+            {snowRunning ? '停止' : '开始'}
           </Button>
         </Paper>
 
-        <Box>
-          <Stack direction='row' alignItems='center' spacing={1} mb={0.75}>
-            <AutoAwesomeIcon fontSize='small' color='action' />
+        {/* 图案选择 */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 1.5,
+            borderRadius: 3,
+            bgcolor: 'background.paper',
+            border: 1,
+            borderColor: 'divider'
+          }}
+        >
+          <Stack direction='row' alignItems='center' spacing={1} mb={1}>
+            <AutoAwesomeIcon fontSize='small' color='primary' />
             <Typography variant='body2' color='text.secondary' fontWeight={700}>
               飘落图案
             </Typography>
@@ -304,30 +332,51 @@ export default function App () {
             size='small'
             sx={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
-              gap: 0.75,
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              gap: 0.6,
               '& .MuiToggleButtonGroup-grouped': {
                 border: 1,
                 borderColor: 'divider',
-                borderRadius: 1,
-                mx: '0 !important'
+                borderRadius: 2,
+                mx: '0 !important',
+                py: 0.6,
+                flexDirection: 'column',
+                gap: 0.25
               }
             }}
           >
             {PATTERN_OPTIONS.map(function (item) {
               return (
-                <ToggleButton key={item.value} value={item.value} sx={{ gap: 0.5, px: 0.75 }}>
+                <ToggleButton
+                  key={item.value}
+                  value={item.value}
+                  sx={{
+                    fontSize: '0.7rem',
+                    lineHeight: 1.1,
+                    '& .MuiSvgIcon-root': { fontSize: '1.1rem' }
+                  }}
+                >
                   {item.icon}
                   {item.label}
                 </ToggleButton>
               )
             })}
           </ToggleButtonGroup>
-        </Box>
+        </Paper>
 
-        <Box>
-          <Stack direction='row' alignItems='center' spacing={1} mb={0.75}>
-            <AutoAwesomeIcon fontSize='small' color='action' />
+        {/* 节日主题 */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 1.5,
+            borderRadius: 3,
+            bgcolor: 'background.paper',
+            border: 1,
+            borderColor: 'divider'
+          }}
+        >
+          <Stack direction='row' alignItems='center' spacing={1} mb={1}>
+            <FavoriteIcon fontSize='small' color='error' />
             <Typography variant='body2' color='text.secondary' fontWeight={700}>
               节日主题
             </Typography>
@@ -338,111 +387,157 @@ export default function App () {
             onChange={handleFestivalThemeChange}
             size='small'
             fullWidth
+            sx={{
+              '& .MuiToggleButtonGroup-grouped': {
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: 2,
+                mx: '0 !important'
+              }
+            }}
           >
             {THEME_OPTIONS.map(function (item) {
               return (
-                <ToggleButton key={item.value} value={item.value} sx={{ gap: 0.5, px: 0.75 }}>
+                <ToggleButton key={item.value} value={item.value} sx={{ gap: 0.5 }}>
                   {item.icon}
                   {item.label}
                 </ToggleButton>
               )
             })}
           </ToggleButtonGroup>
-        </Box>
+        </Paper>
 
-        <Box>
-          <Stack direction='row' alignItems='center' spacing={1} mb={0.5}>
-            <SpeedIcon fontSize='small' color='action' />
-            <Typography variant='body2' color='text.secondary' fontWeight={700}>
-              密度
-            </Typography>
-          </Stack>
-          <ToggleButtonGroup
-            value={intensity}
-            exclusive
-            onChange={handleIntensityChange}
-            size='small'
-            fullWidth
-          >
-            <ToggleButton value='light'>小雪</ToggleButton>
-            <ToggleButton value='normal'>中雪</ToggleButton>
-            <ToggleButton value='heavy'>大雪</ToggleButton>
-          </ToggleButtonGroup>
-          <Slider
-            value={density}
-            onChange={handleDensityChange}
-            min={30}
-            max={380}
-            step={10}
-            size='small'
-            sx={{ mt: 1 }}
-          />
-          <Typography variant='caption' color='text.secondary'>
-            {density} 片
-          </Typography>
-        </Box>
-
-        <Box>
-          <Stack direction='row' alignItems='center' spacing={1} mb={0.5}>
-            <WindPowerIcon fontSize='small' color='action' />
-            <Typography variant='body2' color='text.secondary' fontWeight={700}>
-              风力
-            </Typography>
-          </Stack>
-          <Stack direction='row' spacing={1.5} alignItems='center'>
-            <AirIcon fontSize='small' color='disabled' />
-            <Slider
-              value={wind}
-              onChange={handleWindChange}
-              min={0}
-              max={3}
-              step={0.1}
-              size='small'
-            />
-            <Typography variant='body2' color='text.secondary' sx={{ minWidth: 32 }}>
-              {wind.toFixed(1)}
-            </Typography>
-          </Stack>
-        </Box>
-
+        {/* 环境设置 */}
         <Paper
           elevation={0}
           sx={{
-            p: 1.25,
+            p: 1.5,
+            borderRadius: 3,
+            bgcolor: 'background.paper',
             border: 1,
-            borderColor: 'divider',
-            bgcolor: 'action.hover'
+            borderColor: 'divider'
           }}
         >
-          <Stack spacing={0.25}>
-            <FormControlLabel
-              control={<Switch checked={interaction} onChange={handleInteractionChange} size='small' />}
-              label={
-                <Stack direction='row' spacing={0.75} alignItems='center'>
-                  <MouseIcon fontSize='small' />
-                  <Typography variant='body2'>鼠标推开</Typography>
-                </Stack>
-              }
-            />
-            <FormControlLabel
-              control={<Switch checked={burstOnClick} onChange={handleBurstChange} size='small' />}
-              label={
-                <Stack direction='row' spacing={0.75} alignItems='center'>
-                  <AutoAwesomeIcon fontSize='small' />
-                  <Typography variant='body2'>点击绽放</Typography>
-                </Stack>
-              }
-            />
-            <FormControlLabel
-              control={<Switch checked={audioReactive} onChange={handleAudioReactiveChange} size='small' />}
-              label={
-                <Stack direction='row' spacing={0.75} alignItems='center'>
-                  {audioReactive ? <VolumeUpIcon fontSize='small' /> : <VolumeOffIcon fontSize='small' />}
-                  <Typography variant='body2'>音效联动</Typography>
-                </Stack>
-              }
-            />
+          <Stack direction='row' alignItems='center' spacing={1} mb={1}>
+            <SpeedIcon fontSize='small' color='success' />
+            <Typography variant='body2' color='text.secondary' fontWeight={700}>
+              环境
+            </Typography>
           </Stack>
+
+          <Stack spacing={1.25}>
+            <Box>
+              <Stack direction='row' justifyContent='space-between' alignItems='center' mb={0.5}>
+                <Typography variant='caption' color='text.secondary' fontWeight={600}>
+                  密度
+                </Typography>
+                <Typography variant='caption' color='primary' fontWeight={700}>
+                  {density} 片
+                </Typography>
+              </Stack>
+              <ToggleButtonGroup
+                value={intensity}
+                exclusive
+                onChange={handleIntensityChange}
+                size='small'
+                fullWidth
+                sx={{ mb: 0.75 }}
+              >
+                <ToggleButton value='light'>小雪</ToggleButton>
+                <ToggleButton value='normal'>中雪</ToggleButton>
+                <ToggleButton value='heavy'>大雪</ToggleButton>
+              </ToggleButtonGroup>
+              <Slider
+                value={density}
+                onChange={handleDensityChange}
+                min={30}
+                max={380}
+                step={10}
+                size='small'
+              />
+            </Box>
+
+            <Box>
+              <Stack direction='row' justifyContent='space-between' alignItems='center' mb={0.5}>
+                <Typography variant='caption' color='text.secondary' fontWeight={600}>
+                  风力
+                </Typography>
+                <Typography variant='caption' color='primary' fontWeight={700}>
+                  {wind.toFixed(1)}
+                </Typography>
+              </Stack>
+              <Stack direction='row' spacing={1} alignItems='center'>
+                <AirIcon fontSize='small' color='disabled' />
+                <Slider
+                  value={wind}
+                  onChange={handleWindChange}
+                  min={0}
+                  max={3}
+                  step={0.1}
+                  size='small'
+                />
+                <WindPowerIcon fontSize='small' color='disabled' />
+              </Stack>
+            </Box>
+          </Stack>
+        </Paper>
+
+        {/* 交互开关 */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 1.5,
+            borderRadius: 3,
+            bgcolor: 'background.paper',
+            border: 1,
+            borderColor: 'divider'
+          }}
+        >
+          <Stack direction='row' alignItems='center' spacing={1} mb={1}>
+            <MouseIcon fontSize='small' color='secondary' />
+            <Typography variant='body2' color='text.secondary' fontWeight={700}>
+              交互
+            </Typography>
+          </Stack>
+          <Box sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gap: 0.5
+          }}
+          >
+            <FormControlLabel
+              control={<Switch
+                checked={interaction}
+                onChange={handleInteractionChange}
+                size='small'
+              />}
+              label={<Typography variant='caption'>鼠标推开</Typography>}
+            />
+            <FormControlLabel
+              control={<Switch
+                checked={burstOnClick}
+                onChange={handleBurstChange}
+                size='small'
+              />}
+              label={<Typography variant='caption'>点击绽放</Typography>}
+            />
+            <FormControlLabel
+              control={<Switch
+                checked={snowAccumulation}
+                onChange={handleSnowAccumulationChange}
+                size='small'
+              />}
+              label={<Typography variant='caption'>积雪融化</Typography>}
+            />
+            <FormControlLabel
+              control={<Switch
+                checked={mouseVortex}
+                onChange={handleMouseVortexChange}
+                size='small'
+              />}
+              label={<Typography variant='caption'>鼠标漩涡</Typography>}
+            />
+          </Box>
         </Paper>
       </Box>
     </ThemeProvider>

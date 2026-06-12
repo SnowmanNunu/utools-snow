@@ -8,7 +8,7 @@
 
 **项目名称**：满屏飘落  
 **项目类型**：uTools 桌面粒子特效插件 + 独立桌面应用  
-**当前版本**：v1.1.0（待发布）  
+**当前版本**：v1.2.0（待发布）  
 **仓库地址**：
 - GitHub：https://github.com/SnowmanNunu/utools-snow
 - Gitee：https://gitee.com/SnowmanNunu/utools-snow
@@ -33,7 +33,7 @@
 - [x] 独立版版本号统一为 1.0.1
 - [x] GitHub Release v1.0.1 已自动生成
 
-### v1.1.0（已完成，待提交 uTools）
+### v1.1.0（已发布）
 - [x] 新增 5 种粒子图案：雨滴、金元宝、萤火虫、灯笼、蒲公英
 - [x] 雨滴重绘为细长水滴，新增落地水花与涟漪效果
 - [x] 金元宝采用中国传统元宝造型
@@ -41,26 +41,34 @@
 - [x] 独立桌面版托盘菜单支持直接切换粒子图案
 - [x] README 与 checkpoint 文档同步更新
 
+### v1.2.0（已完成，待提交 uTools）
+- [x] 重新设计控制面板 UI，卡片式布局更现代简洁
+- [x] 新增积雪效果：雪花落底堆积，鼠标划过扫开/加速融化
+- [x] 新增鼠标漩涡：按住左键吸引粒子形成漩涡
+- [x] 精简交互开关为核心 4 个
+- [x] 节日主题包：春节、圣诞、情人节一键切换
+- [x] README / checkpoint / 版本号同步更新
+
 ---
 
 ## 🚀 发布状态
 
 | 平台 | 状态 | 版本 |
 |------|------|------|
-| uTools 插件市场 | 🟡 已撤回 v1.0.1，准备提交 v1.1.0 | v1.1.0 |
-| GitHub Release | ✅ 已发布 v1.0.1，v1.1.0 待发布 | v1.1.0 |
-| Gitee Tag | ✅ 已推送 v1.0.1，v1.1.0 待推送 | v1.1.0 |
+| uTools 插件市场 | 🟡 已撤回 v1.0.1，准备提交 v1.2.0 | v1.2.0 |
+| GitHub Release | ✅ 已发布 v1.1.0，v1.2.0 待发布 | v1.2.0 |
+| Gitee Tag | ✅ 已推送 v1.1.0，v1.2.0 待推送 | v1.2.0 |
 
 ### GitHub Release 下载地址
 
 ```
-https://github.com/SnowmanNunu/utools-snow/releases/tag/v1.0.1
+https://github.com/SnowmanNunu/utools-snow/releases/tag/v1.1.0
 ```
 
 独立桌面版安装包：
-- Windows：`snow-desktop-1.0.1-x64.exe`
-- macOS：`snow-desktop-1.0.1-arm64.dmg`
-- Linux：`snow-desktop-1.0.1-x64.AppImage`
+- Windows：`snow-desktop-1.1.0-x64.exe`
+- macOS：`snow-desktop-1.1.0-arm64.dmg`
+- Linux：`snow-desktop-1.1.0-x64.AppImage`
 
 ---
 

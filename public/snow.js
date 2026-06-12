@@ -187,7 +187,10 @@
     opacityMax: 0.9,
     burstOnClick: true,
     interaction: true,
-    audioReactive: false
+    audioReactive: false,
+    snowAccumulation: true,
+    mouseVortex: true,
+    keyFeedback: true
   }
 
   let particles = []
@@ -197,6 +200,8 @@
   let mouseY = -1000
   let mouseActive = false
   let mouseTimer = null
+  let mouseDown = false
+  let mouseDownButton = 0
   let width = 0
   let height = 0
   let lastTime = 0
@@ -215,6 +220,88 @@
   let audioDataArray = null
   let audioLevel = 0
   let audioLevelSmooth = 0
+
+  // 积雪效果
+  const SNOW_GROUND_CHUNK = 6
+  let snowGround = []
+
+  function initSnowGround () {
+    const chunks = Math.ceil(width / SNOW_GROUND_CHUNK) + 1
+    snowGround = new Array(chunks).fill(0)
+  }
+
+  function addSnowToGround (x, amount) {
+    if (config.pattern !== 'snow' || !config.snowAccumulation) return
+    const center = Math.floor(x / SNOW_GROUND_CHUNK)
+    const radius = 2
+    for (let i = center - radius; i <= center + radius; i++) {
+      if (i >= 0 && i < snowGround.length) {
+        const dist = Math.abs(i - center)
+        const falloff = 1 - dist / (radius + 1)
+        snowGround[i] = Math.min(snowGround[i] + amount * falloff * 3.5, 90)
+      }
+    }
+  }
+
+  function meltSnowGround () {
+    if (config.pattern !== 'snow' || !config.snowAccumulation || snowGround.length === 0) return
+    const mouseIdx = Math.floor(mouseX / SNOW_GROUND_CHUNK)
+    const clearRadius = 10
+    for (let i = 0; i < snowGround.length; i++) {
+      let meltRate = 0.012
+      if (mouseActive) {
+        const dist = Math.abs(i - mouseIdx)
+        if (dist < clearRadius) {
+          meltRate += (clearRadius - dist) * 0.45
+        }
+      }
+      snowGround[i] = Math.max(0, snowGround[i] - meltRate)
+    }
+  }
+
+  function drawSnowGround () {
+    if (config.pattern !== 'snow' || !config.snowAccumulation || snowGround.length === 0) return
+    // 只绘制高度大于 2 的积雪，避免空区域干扰
+    let maxH = 0
+    for (const h of snowGround) {
+      if (h > maxH) maxH = h
+    }
+    if (maxH < 3) return
+
+    ctx.save()
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.98)'
+    ctx.shadowColor = 'rgba(180, 220, 255, 0.65)'
+    ctx.shadowBlur = 14
+    ctx.beginPath()
+    ctx.moveTo(0, height)
+    for (let i = 0; i < snowGround.length; i++) {
+      const x = i * SNOW_GROUND_CHUNK
+      const h = snowGround[i]
+      const prevH = i > 0 ? snowGround[i - 1] : h
+      const nextH = i < snowGround.length - 1 ? snowGround[i + 1] : h
+      const smoothH = (prevH + h * 2 + nextH) / 4
+      ctx.lineTo(x, height - smoothH)
+    }
+    ctx.lineTo(width, height)
+    ctx.closePath()
+    ctx.fill()
+
+    // 顶部高光边线
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    for (let i = 0; i < snowGround.length; i++) {
+      const x = i * SNOW_GROUND_CHUNK
+      const h = snowGround[i]
+      const prevH = i > 0 ? snowGround[i - 1] : h
+      const nextH = i < snowGround.length - 1 ? snowGround[i + 1] : h
+      const smoothH = (prevH + h * 2 + nextH) / 4
+      if (i === 0) ctx.moveTo(x, height - smoothH)
+      else ctx.lineTo(x, height - smoothH)
+    }
+    ctx.stroke()
+    ctx.restore()
+  }
 
   function initAudioReactive () {
     if (audioContext || !navigator.mediaDevices) return
@@ -279,6 +366,7 @@
     canvas.style.width = width + 'px'
     canvas.style.height = height + 'px'
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    initSnowGround()
   }
 
   function makeClusterDots (baseSize) {
@@ -907,6 +995,25 @@
       }
     }
 
+    // 鼠标引力漩涡：按住左键吸引粒子旋转
+    if (mouseDown && config.mouseVortex && mouseDownButton === 0) {
+      const dx = mouseX - particle.x
+      const dy = mouseY - particle.y
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      const vortexRadius = 320
+      if (dist < vortexRadius && dist > 5) {
+        const strength = 1 - dist / vortexRadius
+        const nx = dx / dist
+        const ny = dy / dist
+        // 向心力
+        particle.x += nx * strength * 90 * deltaSec
+        particle.y += ny * strength * 90 * deltaSec
+        // 切向旋转力
+        particle.x += -ny * strength * 70 * deltaSec
+        particle.y += nx * strength * 70 * deltaSec
+      }
+    }
+
     particle.x += sway * particle.swayAmount * swayMul * 30 * deltaSec + effectiveWind * 40 * deltaSec
     particle.rotation += particle.rotationSpeed * deltaSec * (1 + (audioBoost || 0) * 0.5)
     particle.twinkle = 0.82 + Math.sin(timeSec * 1.5 + particle.swayOffset) * 0.08 + particle.detail * 0.08
@@ -916,6 +1023,10 @@
       if (particle.type === 'rain' && Math.random() < 0.28) {
         addSplash(particle.x, height, particle.r)
         addRipple(particle.x, height, particle.r)
+      }
+      // 雪花模式积雪
+      if (particle.type === 'snow' || particle.type === 0 || particle.type === 1 || particle.type === 2) {
+        addSnowToGround(particle.x, particle.r * 0.35)
       }
       Object.assign(particle, createParticle(Math.random() * width, -40, particle.layer))
     }
@@ -1109,6 +1220,10 @@
       drawRipples()
     }
 
+    // 积雪融化与绘制
+    meltSnowGround()
+    drawSnowGround()
+
     maintainDensity()
   }
 
@@ -1120,6 +1235,20 @@
     mouseTimer = setTimeout(function () {
       mouseActive = false
     }, 2000)
+  })
+
+  canvas.addEventListener('mousedown', function (e) {
+    mouseDown = true
+    mouseDownButton = e.button
+  })
+
+  canvas.addEventListener('mouseup', function () {
+    mouseDown = false
+  })
+
+  canvas.addEventListener('mouseleave', function () {
+    mouseDown = false
+    mouseActive = false
   })
 
   canvas.addEventListener('click', function (e) {
@@ -1136,7 +1265,21 @@
     }
   })
 
+  function triggerKeyFeedback () {
+    if (!config.keyFeedback) return
+    const x = Math.random() * width
+    const y = height - 10 - Math.random() * 40
+    addBurst(x, y, 5)
+    for (let i = 0; i < 3; i++) {
+      particles.push(createParticle(x + (Math.random() - 0.5) * 60, y - Math.random() * 30, Math.floor(Math.random() * 3)))
+    }
+  }
+
   window.addEventListener('message', function (event) {
+    if (event.data && event.data.type === 'key-feedback') {
+      triggerKeyFeedback()
+      return
+    }
     if (!event.data || event.data.type !== 'snow-config') return
     const newConfig = event.data.config
     if (!newConfig) return
@@ -1180,6 +1323,7 @@
   function start () {
     resize()
     initParticles()
+    canvas.focus()
     lastTime = 0
     if (animId) cancelAnimationFrame(animId)
     animId = requestAnimationFrame(animate)

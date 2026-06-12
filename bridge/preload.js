@@ -98,6 +98,16 @@ window.services = {
   },
 
   /**
+   * 触发键盘反馈粒子
+   */
+  keyFeedback: function () {
+    if (!isSnowWindowAlive()) return
+    if (snowWindow.webContents && typeof snowWindow.webContents.send === 'function') {
+      snowWindow.webContents.send('key-feedback')
+    }
+  },
+
+  /**
    * 关闭雪景窗口
    */
   closeSnowWindow: function () {

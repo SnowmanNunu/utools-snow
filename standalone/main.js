@@ -231,6 +231,12 @@ ipcMain.on('update-snow-config', function (event, config) {
   updateTrayMenu()
 })
 
+ipcMain.on('key-feedback', function () {
+  if (snowWindow && !snowWindow.isDestroyed()) {
+    snowWindow.webContents.send('key-feedback')
+  }
+})
+
 ipcMain.on('close-snow', function () {
   closeSnowWindow()
   updateTrayMenu()
