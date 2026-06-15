@@ -1087,16 +1087,23 @@
       const dy = mouseY - particle.y
       const dist = Math.sqrt(dx * dx + dy * dy)
       const vortexRadius = 320
-      if (dist < vortexRadius && dist > 5) {
-        const strength = 1 - dist / vortexRadius
+      const minOrbitRadius = 42
+      if (dist < vortexRadius && dist > minOrbitRadius * 0.5) {
+        const t = dist / vortexRadius
+        const strength = Math.max(0, 1 - t)
         const nx = dx / dist
         const ny = dy / dist
+
+        // 近距离以环绕为主，避免粒子全部叠到鼠标中心
+        const orbitFactor = dist < minOrbitRadius ? 1 : 0.55 + 0.45 * (dist - minOrbitRadius) / (vortexRadius - minOrbitRadius)
+        const attractFactor = dist < minOrbitRadius ? 0.08 : 0.55 * strength
+
         // 向心力
-        particle.x += nx * strength * 90 * deltaSec
-        particle.y += ny * strength * 90 * deltaSec
+        particle.x += nx * attractFactor * 100 * deltaSec
+        particle.y += ny * attractFactor * 100 * deltaSec
         // 切向旋转力
-        particle.x += -ny * strength * 70 * deltaSec
-        particle.y += nx * strength * 70 * deltaSec
+        particle.x += -ny * orbitFactor * 85 * deltaSec
+        particle.y += nx * orbitFactor * 85 * deltaSec
       }
     }
 
