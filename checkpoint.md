@@ -60,8 +60,8 @@
 - [x] 代码健壮性：麦克风权限拒绝自动降级、统一 sizeScale 工具函数、边界值保护
 
 ### v1.2.2（开发中）
-- [ ] 模块化 `snow.js`：拆分为 particle / drawers / effects / audio
-- [ ] 配置集中化：颜色、速度、大小统一配置表
+- [x] 模块化 `snow.js`：拆分为 particle / drawers / effects / audio
+- [x] 配置集中化：颜色、速度、大小统一配置表
 
 ### v1.3.0（规划中）
 - [ ] UI 重设计（包含选中状态强化、Hover 反馈、首次使用引导等 UI 细节）
@@ -217,8 +217,8 @@ utools-snow-src/
 - [x] 鼠标漩涡手感优化：距离影响力度、避免粒子完全重叠
 
 #### 代码质量（v1.2.2）
-- [ ] 模块化 `snow.js`：拆分为 particle / drawers / effects / audio
-- [ ] 配置集中化：颜色、速度、大小统一配置表
+- [x] 模块化 `snow.js`：拆分为 particle / drawers / effects / audio
+- [x] 配置集中化：颜色、速度、大小统一配置表
 - [x] 错误边界与健壮性：麦克风权限降级、异常值保护
 
 #### 独立版体验（v1.3.0）
