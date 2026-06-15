@@ -214,6 +214,15 @@
   let width = 0
   let height = 0
   let lastTime = 0
+  let screenScale = 1
+
+  function updateScreenScale () {
+    const area = width * height
+    const baseArea = 1920 * 1080
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    // 面积越大、DPR 越高，粒子密度/大小/速度适度提升
+    screenScale = Math.max(0.8, Math.min(1.5, Math.sqrt(area / baseArea) * (0.85 + dpr * 0.15)))
+  }
 
   // 雨滴特效：水花、涟漪、闪电
   let splashes = []
@@ -231,7 +240,7 @@
   let audioLevelSmooth = 0
 
   // 积雪效果
-  const SNOW_GROUND_CHUNK = 6
+  let snowGroundChunk = 6
   let snowGround = []
   let snowGroundDirty = true
   let snowGroundCanvas = null
@@ -254,14 +263,14 @@
   }
 
   function initSnowGround () {
-    const chunks = Math.ceil(width / SNOW_GROUND_CHUNK) + 1
+    const chunks = Math.ceil(width / snowGroundChunk) + 1
     snowGround = new Array(chunks).fill(0)
     snowGroundDirty = true
   }
 
   function addSnowToGround (x, amount) {
     if (config.pattern !== 'snow' || !config.snowAccumulation) return
-    const center = Math.floor(x / SNOW_GROUND_CHUNK)
+    const center = Math.floor(x / snowGroundChunk)
     const radius = 2
     let changed = false
     for (let i = center - radius; i <= center + radius; i++) {
@@ -278,7 +287,7 @@
 
   function meltSnowGround () {
     if (config.pattern !== 'snow' || !config.snowAccumulation || snowGround.length === 0) return
-    const mouseIdx = Math.floor(mouseX / SNOW_GROUND_CHUNK)
+    const mouseIdx = Math.floor(mouseX / snowGroundChunk)
     const clearRadius = 10
     const center = snowGround.length / 2
     let changed = false
@@ -359,7 +368,7 @@
     targetCtx.beginPath()
     targetCtx.moveTo(0, height)
     for (let i = 0; i < snowGround.length; i++) {
-      const x = i * SNOW_GROUND_CHUNK
+      const x = i * snowGroundChunk
       const h = snowGround[i]
       const prevH = i > 0 ? snowGround[i - 1] : h
       const nextH = i < snowGround.length - 1 ? snowGround[i + 1] : h
@@ -376,7 +385,7 @@
     targetCtx.shadowBlur = 0
     targetCtx.beginPath()
     for (let i = 0; i < snowGround.length; i++) {
-      const x = i * SNOW_GROUND_CHUNK
+      const x = i * snowGroundChunk
       const h = snowGround[i]
       const prevH = i > 0 ? snowGround[i - 1] : h
       const nextH = i < snowGround.length - 1 ? snowGround[i + 1] : h
@@ -442,6 +451,12 @@
       : (PATTERN_PROFILE[config.pattern] ? config.pattern : 'snow')
   }
 
+  function particlePattern (p) {
+    // snow 粒子内部用 0/1/2 表示三种雪花形态
+    if (p.type === 0 || p.type === 1 || p.type === 2) return 'snow'
+    return p.type
+  }
+
   function resize () {
     width = window.innerWidth
     height = window.innerHeight
@@ -451,6 +466,8 @@
     canvas.style.width = width + 'px'
     canvas.style.height = height + 'px'
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    updateScreenScale()
+    snowGroundChunk = 6 * Math.min(Math.max(screenScale, 0.7), 1.5)
     initSnowGround()
   }
 
@@ -467,6 +484,7 @@
   function createParticle (x, y, layer) {
     const pattern = resolvePattern()
     const profile = PATTERN_PROFILE[pattern]
+    const sizeScale = Math.min(Math.max(Math.sqrt(screenScale), 0.85), 1.35)
     const baseSize = config.minSize + Math.random() * (config.maxSize - config.minSize)
     const layerScale = 0.4 + layer * 0.4
     const speedScale = 0.5 + layer * 0.35
@@ -475,8 +493,8 @@
     return {
       x: x !== undefined ? x : Math.random() * width,
       y: y !== undefined ? y : -Math.random() * height - 20,
-      r: baseSize * layerScale * profile.size,
-      speed: (config.minSpeed + Math.random() * (config.maxSpeed - config.minSpeed)) * speedScale * profile.speed,
+      r: baseSize * layerScale * profile.size * sizeScale,
+      speed: (config.minSpeed + Math.random() * (config.maxSpeed - config.minSpeed)) * speedScale * profile.speed * sizeScale,
       swaySpeed: 0.3 + Math.random() * 0.7,
       swayOffset: Math.random() * Math.PI * 2,
       swayAmount: config.swayAmount * (0.5 + Math.random()) * profile.sway,
@@ -491,17 +509,18 @@
       twinkle: 0.82 + Math.random() * 0.22,
       stretch: 0.75 + Math.random() * 0.7,
       detail: Math.random(),
-      clusterDots: makeClusterDots(baseSize),
+      clusterDots: makeClusterDots(baseSize * sizeScale),
       text: pattern === 'text' ? pick(['福', '吉', '喜', '财', '乐', '安']) : undefined
     }
   }
 
   function initParticles () {
     particles = []
+    const scaledDensity = Math.max(30, Math.floor(config.density * screenScale))
     const layers = [
-      { count: Math.floor(config.density * 0.3), layer: 0 },
-      { count: Math.floor(config.density * 0.4), layer: 1 },
-      { count: Math.floor(config.density * 0.3), layer: 2 }
+      { count: Math.floor(scaledDensity * 0.3), layer: 0 },
+      { count: Math.floor(scaledDensity * 0.4), layer: 1 },
+      { count: Math.floor(scaledDensity * 0.3), layer: 2 }
     ]
     for (const l of layers) {
       for (let i = 0; i < l.count; i++) {
@@ -511,9 +530,10 @@
   }
 
   function addBurst (cx, cy, count) {
+    const sizeScale = Math.min(Math.max(Math.sqrt(screenScale), 0.85), 1.35)
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2
-      const dist = 30 + Math.random() * 100
+      const dist = (30 + Math.random() * 100) * sizeScale
       const pattern = resolvePattern()
       let p = burstPool.pop()
       if (!p) p = {}
@@ -523,7 +543,7 @@
       p.vy = Math.sin(angle) * (1 + Math.random() * 3)
       p.life = 1
       p.decay = 0.008 + Math.random() * 0.02
-      p.r = 2 + Math.random() * 4
+      p.r = (2 + Math.random() * 4) * sizeScale
       p.opacity = 0.6 + Math.random() * 0.4
       p.color = pick(PATTERN_PROFILE[pattern].colors)
       p.glow = PATTERN_PROFILE[pattern].glow
@@ -533,8 +553,8 @@
     for (let i = 0; i < Math.floor(count * 0.4); i++) {
       const layer = Math.floor(Math.random() * 3)
       particles.push(createParticle(
-        cx + (Math.random() - 0.5) * 80,
-        cy + (Math.random() - 0.5) * 40,
+        cx + (Math.random() - 0.5) * 80 * sizeScale,
+        cy + (Math.random() - 0.5) * 40 * sizeScale,
         layer
       ))
     }
@@ -1073,7 +1093,7 @@
       const dx = particle.x - mouseX
       const dy = particle.y - mouseY
       const dist = Math.sqrt(dx * dx + dy * dy)
-      const influenceRadius = 250
+      const influenceRadius = 250 * screenScale
       if (dist < influenceRadius) {
         const strength = 1 - dist / influenceRadius
         effectiveWind += (dx / Math.max(dist, 1)) * strength * 2
@@ -1086,8 +1106,8 @@
       const dx = mouseX - particle.x
       const dy = mouseY - particle.y
       const dist = Math.sqrt(dx * dx + dy * dy)
-      const vortexRadius = 320
-      const minOrbitRadius = 42
+      const vortexRadius = 320 * screenScale
+      const minOrbitRadius = 42 * screenScale
       if (dist < vortexRadius && dist > minOrbitRadius * 0.5) {
         const t = dist / vortexRadius
         const strength = Math.max(0, 1 - t)
@@ -1123,8 +1143,8 @@
       }
       Object.assign(particle, createParticle(Math.random() * width, -40, particle.layer))
     }
-    if (particle.x > width + 70) particle.x = -70
-    if (particle.x < -70) particle.x = width + 70
+    if (particle.x > width + 70 * screenScale) particle.x = -70 * screenScale
+    if (particle.x < -70 * screenScale) particle.x = width + 70 * screenScale
   }
 
   function drawBursts (deltaSec) {
@@ -1215,10 +1235,11 @@
   }
 
   function drawRipples () {
+    const lineScale = Math.min(Math.max(Math.sqrt(screenScale), 0.85), 1.35)
     for (const rp of ripples) {
       const alpha = rp.life * 0.35
       ctx.strokeStyle = 'rgba(160, 210, 245, ' + alpha + ')'
-      ctx.lineWidth = 0.8
+      ctx.lineWidth = 0.8 * lineScale
       for (let i = 0; i < rp.rings; i++) {
         const ringRadius = rp.radius * (1 - i * 0.28)
         if (ringRadius <= 0) continue
@@ -1273,13 +1294,14 @@
   }
 
   function maintainDensity () {
-    if (particles.length < config.density) {
-      const toAdd = Math.min(config.density - particles.length, 4)
+    const targetCount = Math.max(30, Math.floor(config.density * screenScale))
+    if (particles.length < targetCount) {
+      const toAdd = Math.min(targetCount - particles.length, 4)
       for (let i = 0; i < toAdd; i++) {
         particles.push(createParticle(undefined, -Math.random() * 20, Math.floor(Math.random() * 3)))
       }
-    } else if (particles.length > config.density + 10) {
-      particles.splice(config.density)
+    } else if (particles.length > targetCount + 10) {
+      particles.splice(targetCount)
     }
   }
 
@@ -1348,15 +1370,40 @@
     // 图案切换平滑过渡：逐步替换旧粒子为新图案
     if (patternTransitionFrames > 0) {
       patternTransitionFrames--
-      const replaceCount = Math.max(1, Math.ceil(particles.length * 0.055))
-      for (let i = 0; i < replaceCount; i++) {
-        const idx = Math.floor(Math.random() * particles.length)
-        Object.assign(particles[idx], createParticle(
-          Math.random() * width,
-          -Math.random() * height * 0.55,
-          particles[idx].layer
-        ))
+      const target = transitionTargetPattern
+      const oldParticles = particles.map(function (p, i) { return { p: p, i: i } })
+        .filter(function (item) { return particlePattern(item.p) !== target })
+      if (oldParticles.length > 0) {
+        const remainingFrames = Math.max(1, patternTransitionFrames)
+        const replaceCount = Math.max(1, Math.ceil(oldParticles.length / remainingFrames))
+        for (let i = 0; i < Math.min(replaceCount, oldParticles.length); i++) {
+          const pickIdx = Math.floor(Math.random() * oldParticles.length)
+          const idx = oldParticles[pickIdx].i
+          oldParticles.splice(pickIdx, 1)
+          Object.assign(particles[idx], createParticle(
+            Math.random() * width,
+            -Math.random() * height * 0.55,
+            particles[idx].layer
+          ))
+        }
       }
+    }
+
+    // 兜底清理：若过渡已结束但仍有旧图案粒子，立即全部替换
+    if (patternTransitionFrames === 0 && transitionTargetPattern) {
+      const target = transitionTargetPattern
+      let hasOld = false
+      for (let i = 0; i < particles.length; i++) {
+        if (particlePattern(particles[i]) !== target) {
+          hasOld = true
+          Object.assign(particles[i], createParticle(
+            Math.random() * width,
+            -Math.random() * height * 0.55,
+            particles[i].layer
+          ))
+        }
+      }
+      if (!hasOld) transitionTargetPattern = null
     }
 
     maintainDensity()
@@ -1402,11 +1449,12 @@
 
   function triggerKeyFeedback () {
     if (!config.keyFeedback) return
+    const sizeScale = Math.min(Math.max(Math.sqrt(screenScale), 0.85), 1.35)
     const x = Math.random() * width
     const y = height - 10 - Math.random() * 40
     addBurst(x, y, 5)
     for (let i = 0; i < 3; i++) {
-      particles.push(createParticle(x + (Math.random() - 0.5) * 60, y - Math.random() * 30, Math.floor(Math.random() * 3)))
+      particles.push(createParticle(x + (Math.random() - 0.5) * 60 * sizeScale, y - Math.random() * 30 * sizeScale, Math.floor(Math.random() * 3)))
     }
   }
 
@@ -1481,8 +1529,9 @@
     if (themeChanged || sizeChanged) {
       initParticles()
       patternTransitionFrames = 0
-    } else if (newConfig.density !== undefined && particles.length > config.density) {
-      particles.splice(Math.floor(config.density))
+      transitionTargetPattern = null
+    } else if (newConfig.density !== undefined && particles.length > Math.floor(config.density * screenScale)) {
+      particles.splice(Math.floor(config.density * screenScale))
     }
   })
 
@@ -1510,7 +1559,11 @@
     setConfig: function (cfg) {
       const shouldRefresh = cfg && (cfg.pattern !== undefined || cfg.minSize !== undefined || cfg.maxSize !== undefined)
       Object.assign(config, cfg)
-      if (shouldRefresh) initParticles()
+      if (shouldRefresh) {
+        initParticles()
+        patternTransitionFrames = 0
+        transitionTargetPattern = null
+      }
     }
   }
 
