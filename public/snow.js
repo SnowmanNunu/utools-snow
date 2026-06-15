@@ -280,23 +280,47 @@
     if (config.pattern !== 'snow' || !config.snowAccumulation || snowGround.length === 0) return
     const mouseIdx = Math.floor(mouseX / SNOW_GROUND_CHUNK)
     const clearRadius = 10
+    const center = snowGround.length / 2
     let changed = false
     for (let i = 0; i < snowGround.length; i++) {
       let meltRate = 0.012
+
+      // 边缘融化更快
+      const distFromCenter = Math.abs(i - center) / center
+      meltRate += distFromCenter * 0.018
+
+      // 鼠标划过加速融化/扫出凹槽
       if (mouseActive) {
         const dist = Math.abs(i - mouseIdx)
         if (dist < clearRadius) {
-          meltRate += (clearRadius - dist) * 0.45
+          meltRate += (clearRadius - dist) * 0.55
         }
       }
+
       const before = snowGround[i]
       snowGround[i] = Math.max(0, snowGround[i] - meltRate)
+
+      // 凹槽回填：如果当前位置明显低于周围平均，缓慢恢复
+      if (!mouseActive || Math.abs(i - mouseIdx) >= clearRadius) {
+        let localSum = 0
+        let localCount = 0
+        const range = 4
+        for (let j = Math.max(0, i - range); j <= Math.min(snowGround.length - 1, i + range); j++) {
+          localSum += snowGround[j]
+          localCount++
+        }
+        const localAvg = localSum / localCount
+        if (snowGround[i] < localAvg * 0.65 && localAvg > 5) {
+          snowGround[i] += (localAvg * 0.85 - snowGround[i]) * 0.035
+        }
+      }
+
       if (snowGround[i] !== before) changed = true
     }
     if (changed) snowGroundDirty = true
   }
 
-  function drawSnowGround () {
+  function drawSnowGround (timeSec) {
     if (config.pattern !== 'snow' || !config.snowAccumulation || snowGround.length === 0) return
     // 只绘制高度大于 2 的积雪，避免空区域干扰
     let maxH = 0
@@ -305,48 +329,63 @@
     }
     if (maxH < 3) return
 
-    ensureSnowGroundCanvas()
+    // 风力较大时（>0.3）禁用缓存，实时绘制风吹波浪
+    const useCache = config.wind <= 0.3
 
-    if (snowGroundDirty) {
-      snowGroundCtx.clearRect(0, 0, width, height)
-      snowGroundCtx.save()
-      snowGroundCtx.fillStyle = 'rgba(255, 255, 255, 0.98)'
-      snowGroundCtx.shadowColor = 'rgba(180, 220, 255, 0.65)'
-      snowGroundCtx.shadowBlur = 14
-      snowGroundCtx.beginPath()
-      snowGroundCtx.moveTo(0, height)
-      for (let i = 0; i < snowGround.length; i++) {
-        const x = i * SNOW_GROUND_CHUNK
-        const h = snowGround[i]
-        const prevH = i > 0 ? snowGround[i - 1] : h
-        const nextH = i < snowGround.length - 1 ? snowGround[i + 1] : h
-        const smoothH = (prevH + h * 2 + nextH) / 4
-        snowGroundCtx.lineTo(x, height - smoothH)
-      }
-      snowGroundCtx.lineTo(width, height)
-      snowGroundCtx.closePath()
-      snowGroundCtx.fill()
-
-      // 顶部高光边线
-      snowGroundCtx.strokeStyle = 'rgba(255, 255, 255, 0.85)'
-      snowGroundCtx.lineWidth = 2
-      snowGroundCtx.shadowBlur = 0
-      snowGroundCtx.beginPath()
-      for (let i = 0; i < snowGround.length; i++) {
-        const x = i * SNOW_GROUND_CHUNK
-        const h = snowGround[i]
-        const prevH = i > 0 ? snowGround[i - 1] : h
-        const nextH = i < snowGround.length - 1 ? snowGround[i + 1] : h
-        const smoothH = (prevH + h * 2 + nextH) / 4
-        if (i === 0) snowGroundCtx.moveTo(x, height - smoothH)
-        else snowGroundCtx.lineTo(x, height - smoothH)
-      }
-      snowGroundCtx.stroke()
-      snowGroundCtx.restore()
-      snowGroundDirty = false
+    function getDrawHeight (i, baseH) {
+      if (config.wind <= 0.05) return baseH
+      const windWave = Math.sin(i * 0.12 + timeSec * 1.5 + config.wind * 2) * config.wind * 4
+      return baseH + windWave
     }
 
-    ctx.drawImage(snowGroundCanvas, 0, 0, width, height)
+    if (useCache) {
+      ensureSnowGroundCanvas()
+      if (snowGroundDirty) {
+        snowGroundCtx.clearRect(0, 0, width, height)
+        renderSnowGroundShape(snowGroundCtx, getDrawHeight)
+        snowGroundDirty = false
+      }
+      ctx.drawImage(snowGroundCanvas, 0, 0, width, height)
+    } else {
+      renderSnowGroundShape(ctx, getDrawHeight)
+    }
+  }
+
+  function renderSnowGroundShape (targetCtx, heightFn) {
+    targetCtx.save()
+    targetCtx.fillStyle = 'rgba(255, 255, 255, 0.98)'
+    targetCtx.shadowColor = 'rgba(180, 220, 255, 0.65)'
+    targetCtx.shadowBlur = 14
+    targetCtx.beginPath()
+    targetCtx.moveTo(0, height)
+    for (let i = 0; i < snowGround.length; i++) {
+      const x = i * SNOW_GROUND_CHUNK
+      const h = snowGround[i]
+      const prevH = i > 0 ? snowGround[i - 1] : h
+      const nextH = i < snowGround.length - 1 ? snowGround[i + 1] : h
+      const smoothH = (prevH + h * 2 + nextH) / 4
+      targetCtx.lineTo(x, height - heightFn(i, smoothH))
+    }
+    targetCtx.lineTo(width, height)
+    targetCtx.closePath()
+    targetCtx.fill()
+
+    // 顶部高光边线
+    targetCtx.strokeStyle = 'rgba(255, 255, 255, 0.85)'
+    targetCtx.lineWidth = 2
+    targetCtx.shadowBlur = 0
+    targetCtx.beginPath()
+    for (let i = 0; i < snowGround.length; i++) {
+      const x = i * SNOW_GROUND_CHUNK
+      const h = snowGround[i]
+      const prevH = i > 0 ? snowGround[i - 1] : h
+      const nextH = i < snowGround.length - 1 ? snowGround[i + 1] : h
+      const smoothH = (prevH + h * 2 + nextH) / 4
+      if (i === 0) targetCtx.moveTo(x, height - heightFn(i, smoothH))
+      else targetCtx.lineTo(x, height - heightFn(i, smoothH))
+    }
+    targetCtx.stroke()
+    targetCtx.restore()
   }
 
   function initAudioReactive () {
@@ -1297,7 +1336,7 @@
 
     // 积雪融化与绘制
     meltSnowGround()
-    drawSnowGround()
+    drawSnowGround(timeSec)
 
     // 图案切换平滑过渡：逐步替换旧粒子为新图案
     if (patternTransitionFrames > 0) {
