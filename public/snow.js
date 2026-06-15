@@ -195,6 +195,7 @@
 
   let particles = []
   let burstParticles = []
+  const burstPool = []
   let animId = null
   let mouseX = -1000
   let mouseY = -1000
@@ -224,29 +225,54 @@
   // 积雪效果
   const SNOW_GROUND_CHUNK = 6
   let snowGround = []
+  let snowGroundDirty = true
+  let snowGroundCanvas = null
+  let snowGroundCtx = null
+
+  function ensureSnowGroundCanvas () {
+    if (!snowGroundCanvas) {
+      snowGroundCanvas = document.createElement('canvas')
+      snowGroundCtx = snowGroundCanvas.getContext('2d')
+    }
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    if (snowGroundCanvas.width !== Math.floor(width * dpr) || snowGroundCanvas.height !== Math.floor(height * dpr)) {
+      snowGroundCanvas.width = Math.floor(width * dpr)
+      snowGroundCanvas.height = Math.floor(height * dpr)
+      snowGroundCanvas.style.width = width + 'px'
+      snowGroundCanvas.style.height = height + 'px'
+      snowGroundCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      snowGroundDirty = true
+    }
+  }
 
   function initSnowGround () {
     const chunks = Math.ceil(width / SNOW_GROUND_CHUNK) + 1
     snowGround = new Array(chunks).fill(0)
+    snowGroundDirty = true
   }
 
   function addSnowToGround (x, amount) {
     if (config.pattern !== 'snow' || !config.snowAccumulation) return
     const center = Math.floor(x / SNOW_GROUND_CHUNK)
     const radius = 2
+    let changed = false
     for (let i = center - radius; i <= center + radius; i++) {
       if (i >= 0 && i < snowGround.length) {
         const dist = Math.abs(i - center)
         const falloff = 1 - dist / (radius + 1)
+        const before = snowGround[i]
         snowGround[i] = Math.min(snowGround[i] + amount * falloff * 3.5, 90)
+        if (snowGround[i] !== before) changed = true
       }
     }
+    if (changed) snowGroundDirty = true
   }
 
   function meltSnowGround () {
     if (config.pattern !== 'snow' || !config.snowAccumulation || snowGround.length === 0) return
     const mouseIdx = Math.floor(mouseX / SNOW_GROUND_CHUNK)
     const clearRadius = 10
+    let changed = false
     for (let i = 0; i < snowGround.length; i++) {
       let meltRate = 0.012
       if (mouseActive) {
@@ -255,8 +281,11 @@
           meltRate += (clearRadius - dist) * 0.45
         }
       }
+      const before = snowGround[i]
       snowGround[i] = Math.max(0, snowGround[i] - meltRate)
+      if (snowGround[i] !== before) changed = true
     }
+    if (changed) snowGroundDirty = true
   }
 
   function drawSnowGround () {
@@ -268,39 +297,48 @@
     }
     if (maxH < 3) return
 
-    ctx.save()
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.98)'
-    ctx.shadowColor = 'rgba(180, 220, 255, 0.65)'
-    ctx.shadowBlur = 14
-    ctx.beginPath()
-    ctx.moveTo(0, height)
-    for (let i = 0; i < snowGround.length; i++) {
-      const x = i * SNOW_GROUND_CHUNK
-      const h = snowGround[i]
-      const prevH = i > 0 ? snowGround[i - 1] : h
-      const nextH = i < snowGround.length - 1 ? snowGround[i + 1] : h
-      const smoothH = (prevH + h * 2 + nextH) / 4
-      ctx.lineTo(x, height - smoothH)
-    }
-    ctx.lineTo(width, height)
-    ctx.closePath()
-    ctx.fill()
+    ensureSnowGroundCanvas()
 
-    // 顶部高光边线
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'
-    ctx.lineWidth = 2
-    ctx.beginPath()
-    for (let i = 0; i < snowGround.length; i++) {
-      const x = i * SNOW_GROUND_CHUNK
-      const h = snowGround[i]
-      const prevH = i > 0 ? snowGround[i - 1] : h
-      const nextH = i < snowGround.length - 1 ? snowGround[i + 1] : h
-      const smoothH = (prevH + h * 2 + nextH) / 4
-      if (i === 0) ctx.moveTo(x, height - smoothH)
-      else ctx.lineTo(x, height - smoothH)
+    if (snowGroundDirty) {
+      snowGroundCtx.clearRect(0, 0, width, height)
+      snowGroundCtx.save()
+      snowGroundCtx.fillStyle = 'rgba(255, 255, 255, 0.98)'
+      snowGroundCtx.shadowColor = 'rgba(180, 220, 255, 0.65)'
+      snowGroundCtx.shadowBlur = 14
+      snowGroundCtx.beginPath()
+      snowGroundCtx.moveTo(0, height)
+      for (let i = 0; i < snowGround.length; i++) {
+        const x = i * SNOW_GROUND_CHUNK
+        const h = snowGround[i]
+        const prevH = i > 0 ? snowGround[i - 1] : h
+        const nextH = i < snowGround.length - 1 ? snowGround[i + 1] : h
+        const smoothH = (prevH + h * 2 + nextH) / 4
+        snowGroundCtx.lineTo(x, height - smoothH)
+      }
+      snowGroundCtx.lineTo(width, height)
+      snowGroundCtx.closePath()
+      snowGroundCtx.fill()
+
+      // 顶部高光边线
+      snowGroundCtx.strokeStyle = 'rgba(255, 255, 255, 0.85)'
+      snowGroundCtx.lineWidth = 2
+      snowGroundCtx.shadowBlur = 0
+      snowGroundCtx.beginPath()
+      for (let i = 0; i < snowGround.length; i++) {
+        const x = i * SNOW_GROUND_CHUNK
+        const h = snowGround[i]
+        const prevH = i > 0 ? snowGround[i - 1] : h
+        const nextH = i < snowGround.length - 1 ? snowGround[i + 1] : h
+        const smoothH = (prevH + h * 2 + nextH) / 4
+        if (i === 0) snowGroundCtx.moveTo(x, height - smoothH)
+        else snowGroundCtx.lineTo(x, height - smoothH)
+      }
+      snowGroundCtx.stroke()
+      snowGroundCtx.restore()
+      snowGroundDirty = false
     }
-    ctx.stroke()
-    ctx.restore()
+
+    ctx.drawImage(snowGroundCanvas, 0, 0, width, height)
   }
 
   function initAudioReactive () {
@@ -430,18 +468,19 @@
       const angle = Math.random() * Math.PI * 2
       const dist = 30 + Math.random() * 100
       const pattern = resolvePattern()
-      burstParticles.push({
-        x: cx + Math.cos(angle) * dist * Math.random(),
-        y: cy + Math.sin(angle) * dist * Math.random(),
-        vx: Math.cos(angle) * (1 + Math.random() * 3),
-        vy: Math.sin(angle) * (1 + Math.random() * 3),
-        life: 1,
-        decay: 0.008 + Math.random() * 0.02,
-        r: 2 + Math.random() * 4,
-        opacity: 0.6 + Math.random() * 0.4,
-        color: pick(PATTERN_PROFILE[pattern].colors),
-        glow: PATTERN_PROFILE[pattern].glow
-      })
+      let p = burstPool.pop()
+      if (!p) p = {}
+      p.x = cx + Math.cos(angle) * dist * Math.random()
+      p.y = cy + Math.sin(angle) * dist * Math.random()
+      p.vx = Math.cos(angle) * (1 + Math.random() * 3)
+      p.vy = Math.sin(angle) * (1 + Math.random() * 3)
+      p.life = 1
+      p.decay = 0.008 + Math.random() * 0.02
+      p.r = 2 + Math.random() * 4
+      p.opacity = 0.6 + Math.random() * 0.4
+      p.color = pick(PATTERN_PROFILE[pattern].colors)
+      p.glow = PATTERN_PROFILE[pattern].glow
+      burstParticles.push(p)
     }
 
     for (let i = 0; i < Math.floor(count * 0.4); i++) {
@@ -1041,6 +1080,7 @@
       p.y += p.vy * 60 * deltaSec
       p.life -= p.decay
       if (p.life <= 0) {
+        burstPool.push(p)
         burstParticles.splice(i, 1)
         continue
       }
