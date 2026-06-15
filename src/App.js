@@ -196,7 +196,7 @@ export default function App () {
     setPattern(cfg.pattern)
     setDensity(cfg.density)
     setWind(cfg.wind)
-    updateConfig({ theme: newTheme, pattern: cfg.pattern, density: cfg.density, wind: cfg.wind })
+    updateConfig({ theme: newTheme, pattern: cfg.pattern, density: cfg.density, wind: cfg.wind, transition: true })
   }
 
   function handleSnowAccumulationChange (event) {

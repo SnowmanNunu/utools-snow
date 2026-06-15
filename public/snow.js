@@ -193,6 +193,12 @@
     keyFeedback: true
   }
 
+  // 可插值参数的目标值（用于主题切换平滑过渡）
+  let targetDensity = config.density
+  let targetWind = config.wind
+  let targetOpacityMin = config.opacityMin
+  let targetOpacityMax = config.opacityMax
+
   let particles = []
   let burstParticles = []
   const burstPool = []
@@ -1196,6 +1202,30 @@
     ctx.fillRect(0, 0, width, height)
   }
 
+  function lerpConfigValues (deltaSec) {
+    const speed = Math.min(1, 6 * deltaSec)
+    if (Math.abs(targetDensity - config.density) > 0.5) {
+      config.density += (targetDensity - config.density) * speed
+    } else {
+      config.density = targetDensity
+    }
+    if (Math.abs(targetWind - config.wind) > 0.01) {
+      config.wind += (targetWind - config.wind) * speed
+    } else {
+      config.wind = targetWind
+    }
+    if (Math.abs(targetOpacityMin - config.opacityMin) > 0.005) {
+      config.opacityMin += (targetOpacityMin - config.opacityMin) * speed
+    } else {
+      config.opacityMin = targetOpacityMin
+    }
+    if (Math.abs(targetOpacityMax - config.opacityMax) > 0.005) {
+      config.opacityMax += (targetOpacityMax - config.opacityMax) * speed
+    } else {
+      config.opacityMax = targetOpacityMax
+    }
+  }
+
   function maintainDensity () {
     if (particles.length < config.density) {
       const toAdd = Math.min(config.density - particles.length, 4)
@@ -1248,6 +1278,9 @@
       Math.sin(timestamp * 0.0007) * 0.2 +
       Math.cos(timestamp * 0.0011) * 0.15
     const windForce = config.wind + windVariation + audioBoost * 0.8
+
+    // 参数平滑插值（主题切换时的密度/风力/透明度渐变）
+    lerpConfigValues(deltaSec)
 
     for (const particle of particles) {
       updateParticle(particle, windForce, deltaSec, timeSec, audioBoost)
@@ -1343,7 +1376,34 @@
     const patternChanged = newConfig.pattern !== undefined && newConfig.pattern !== config.pattern
     const themeChanged = newConfig.theme !== undefined
     const sizeChanged = newConfig.minSize !== undefined || newConfig.maxSize !== undefined
-    Object.assign(config, newConfig)
+    const isTransition = newConfig.transition === true
+
+    // 可插值参数：transition 模式只改目标值，否则直接到位
+    if (newConfig.density !== undefined) {
+      if (isTransition) targetDensity = newConfig.density
+      else { config.density = newConfig.density; targetDensity = newConfig.density }
+    }
+    if (newConfig.wind !== undefined) {
+      if (isTransition) targetWind = newConfig.wind
+      else { config.wind = newConfig.wind; targetWind = newConfig.wind }
+    }
+    if (newConfig.opacityMin !== undefined) {
+      if (isTransition) targetOpacityMin = newConfig.opacityMin
+      else { config.opacityMin = newConfig.opacityMin; targetOpacityMin = newConfig.opacityMin }
+    }
+    if (newConfig.opacityMax !== undefined) {
+      if (isTransition) targetOpacityMax = newConfig.opacityMax
+      else { config.opacityMax = newConfig.opacityMax; targetOpacityMax = newConfig.opacityMax }
+    }
+
+    // 移除已处理的字段，避免 Object.assign 覆盖
+    const cleanConfig = { ...newConfig }
+    delete cleanConfig.transition
+    delete cleanConfig.density
+    delete cleanConfig.wind
+    delete cleanConfig.opacityMin
+    delete cleanConfig.opacityMax
+    Object.assign(config, cleanConfig)
 
     // 音效联动开关
     if (newConfig.audioReactive !== undefined) {
@@ -1354,16 +1414,14 @@
       }
     }
 
-    // 节日主题包
+    // 节日主题包：设置目标值，让 lerp 完成平滑过渡
     if (newConfig.theme !== undefined && THEMES[newConfig.theme]) {
       const theme = THEMES[newConfig.theme]
-      Object.assign(config, {
-        pattern: theme.pattern,
-        density: theme.density,
-        wind: theme.wind,
-        opacityMin: theme.opacityMin,
-        opacityMax: theme.opacityMax
-      })
+      config.pattern = theme.pattern
+      targetDensity = theme.density
+      targetWind = theme.wind
+      targetOpacityMin = theme.opacityMin
+      targetOpacityMax = theme.opacityMax
     } else if (newConfig.theme === null) {
       // 取消主题，保留用户当前其他配置
     }
@@ -1378,7 +1436,7 @@
       initParticles()
       patternTransitionFrames = 0
     } else if (newConfig.density !== undefined && particles.length > config.density) {
-      particles.splice(config.density)
+      particles.splice(Math.floor(config.density))
     }
   })
 
