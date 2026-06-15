@@ -215,6 +215,7 @@
   let height = 0
   let lastTime = 0
   let screenScale = 1
+  let canvasDpr = 1
 
   function updateScreenScale () {
     const area = width * height
@@ -222,6 +223,10 @@
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
     // 面积越大、DPR 越高，粒子密度/大小/速度适度提升
     screenScale = Math.max(0.8, Math.min(1.5, Math.sqrt(area / baseArea) * (0.85 + dpr * 0.15)))
+  }
+
+  function getSizeScale () {
+    return Math.min(Math.max(Math.sqrt(screenScale), 0.85), 1.35)
   }
 
   // 雨滴特效：水花、涟漪、闪电
@@ -407,6 +412,7 @@
       audioSource.connect(audioAnalyser)
       audioDataArray = new Uint8Array(audioAnalyser.frequencyBinCount)
     }).catch(function (err) {
+      config.audioReactive = false
       console.warn('无法获取麦克风权限，音效联动不可用:', err)
     })
   }
@@ -427,12 +433,18 @@
   }
 
   function updateAudioLevel () {
-    if (!audioAnalyser || !audioDataArray) {
+    if (!audioAnalyser || !audioDataArray || audioAnalyser.frequencyBinCount === 0) {
       audioLevel = 0
       audioLevelSmooth = 0
       return
     }
-    audioAnalyser.getByteFrequencyData(audioDataArray)
+    try {
+      audioAnalyser.getByteFrequencyData(audioDataArray)
+    } catch (e) {
+      audioLevel = 0
+      audioLevelSmooth = 0
+      return
+    }
     let sum = 0
     for (let i = 0; i < audioDataArray.length; i++) {
       sum += audioDataArray[i]
@@ -461,6 +473,7 @@
     width = window.innerWidth
     height = window.innerHeight
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    canvasDpr = dpr
     canvas.width = Math.floor(width * dpr)
     canvas.height = Math.floor(height * dpr)
     canvas.style.width = width + 'px'
@@ -484,8 +497,8 @@
   function createParticle (x, y, layer) {
     const pattern = resolvePattern()
     const profile = PATTERN_PROFILE[pattern]
-    const sizeScale = Math.min(Math.max(Math.sqrt(screenScale), 0.85), 1.35)
-    const baseSize = config.minSize + Math.random() * (config.maxSize - config.minSize)
+    const sizeScale = getSizeScale()
+    const baseSize = Math.max(0.5, config.minSize + Math.random() * (config.maxSize - config.minSize))
     const layerScale = 0.4 + layer * 0.4
     const speedScale = 0.5 + layer * 0.35
     const opacityScale = 0.5 + layer * 0.35
@@ -493,13 +506,13 @@
     return {
       x: x !== undefined ? x : Math.random() * width,
       y: y !== undefined ? y : -Math.random() * height - 20,
-      r: baseSize * layerScale * profile.size * sizeScale,
-      speed: (config.minSpeed + Math.random() * (config.maxSpeed - config.minSpeed)) * speedScale * profile.speed * sizeScale,
+      r: Math.max(0.3, baseSize * layerScale * profile.size * sizeScale),
+      speed: Math.max(0.05, (config.minSpeed + Math.random() * (config.maxSpeed - config.minSpeed)) * speedScale * profile.speed * sizeScale),
       swaySpeed: 0.3 + Math.random() * 0.7,
       swayOffset: Math.random() * Math.PI * 2,
       swayAmount: config.swayAmount * (0.5 + Math.random()) * profile.sway,
-      opacity: (config.opacityMin + Math.random() * (config.opacityMax - config.opacityMin)) * profile.opacity,
-      opacityScale: opacityScale,
+      opacity: Math.max(0.05, Math.min(1, (config.opacityMin + Math.random() * (config.opacityMax - config.opacityMin)) * profile.opacity)),
+      opacityScale: Math.max(0.1, Math.min(1, opacityScale)),
       layer: layer,
       rotation: Math.random() * Math.PI * 2,
       rotationSpeed: (Math.random() - 0.5) * profile.rotation,
@@ -530,7 +543,7 @@
   }
 
   function addBurst (cx, cy, count) {
-    const sizeScale = Math.min(Math.max(Math.sqrt(screenScale), 0.85), 1.35)
+    const sizeScale = getSizeScale()
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2
       const dist = (30 + Math.random() * 100) * sizeScale
@@ -990,96 +1003,118 @@
     ctx.fill()
   }
 
-  function drawParticle (particle) {
-    ctx.save()
-    ctx.translate(particle.x, particle.y)
-    ctx.rotate(particle.rotation)
+  function applyParticleContext (particle) {
+    const c = Math.cos(particle.rotation)
+    const s = Math.sin(particle.rotation)
+    ctx.setTransform(canvasDpr * c, canvasDpr * s, -canvasDpr * s, canvasDpr * c, canvasDpr * particle.x, canvasDpr * particle.y)
     ctx.globalAlpha = particle.opacity * particle.opacityScale * particle.twinkle
     ctx.fillStyle = particle.color
     ctx.strokeStyle = particle.color
     ctx.shadowColor = particle.glow
+  }
 
-    const r = particle.r
-    switch (particle.type) {
-      case 0:
-        ctx.shadowBlur = r * 1.5
+  function resetParticleTransform () {
+    ctx.setTransform(canvasDpr, 0, 0, canvasDpr, 0, 0)
+  }
+
+  const PARTICLE_DRAWERS = {
+    0: function (p) {
+      ctx.shadowBlur = p.r * 1.5
+      ctx.beginPath()
+      ctx.arc(0, 0, p.r, 0, Math.PI * 2)
+      ctx.fill()
+    },
+    1: function (p) {
+      ctx.shadowBlur = p.r * 2
+      drawSnowCrystal(p.r)
+    },
+    2: function (p) {
+      ctx.shadowBlur = p.r * 0.8
+      for (const dot of p.clusterDots) {
         ctx.beginPath()
-        ctx.arc(0, 0, r, 0, Math.PI * 2)
+        ctx.arc(dot.x, dot.y, p.r * dot.r, 0, Math.PI * 2)
         ctx.fill()
-        break
-      case 1:
-        ctx.shadowBlur = r * 2
-        drawSnowCrystal(r)
-        break
-      case 2:
-        ctx.shadowBlur = r * 0.8
-        for (const dot of particle.clusterDots) {
-          ctx.beginPath()
-          ctx.arc(dot.x, dot.y, r * dot.r, 0, Math.PI * 2)
-          ctx.fill()
-        }
-        ctx.beginPath()
-        ctx.arc(0, 0, r * 0.4, 0, Math.PI * 2)
-        ctx.fill()
-        break
-      case 'star':
-        ctx.shadowBlur = r * 2.5
-        drawFivePointStar(r)
-        break
-      case 'heart':
-        ctx.shadowBlur = r * 2
-        drawHeart(r)
-        break
-      case 'petal':
-        ctx.shadowBlur = r * 1.7
-        drawPetal(r, particle)
-        break
-      case 'bubble':
-        ctx.shadowBlur = r * 2.8
-        drawBubble(r)
-        break
-      case 'maple':
-        ctx.shadowBlur = r * 1.6
-        drawMaple(r)
-        break
-      case 'note':
-        ctx.shadowBlur = r * 2.5
-        drawNote(r)
-        break
-      case 'packet':
-        ctx.shadowBlur = r * 1.8
-        drawPacket(r)
-        break
-      case 'dandelion':
-        ctx.shadowBlur = r * 1.8
-        drawDandelion(r)
-        break
-      case 'butterfly':
-        ctx.shadowBlur = r * 2.2
-        drawButterfly(r)
-        break
-      case 'rain':
-        ctx.shadowBlur = r * 1.2
-        drawRain(r, particle)
-        break
-      case 'gold':
-        ctx.shadowBlur = r * 2.2
-        drawGold(r)
-        break
-      case 'text':
-        ctx.shadowBlur = r * 2
-        drawText(r, particle)
-        break
-      case 'firefly':
-        ctx.shadowBlur = r * 4.5
-        drawFirefly(r, particle)
-        break
-      case 'lantern':
-        ctx.shadowBlur = r * 2.2
-        drawLantern(r)
-        break
+      }
+      ctx.beginPath()
+      ctx.arc(0, 0, p.r * 0.4, 0, Math.PI * 2)
+      ctx.fill()
+    },
+    star: function (p) {
+      ctx.shadowBlur = p.r * 2.5
+      drawFivePointStar(p.r)
+    },
+    heart: function (p) {
+      ctx.shadowBlur = p.r * 2
+      drawHeart(p.r)
+    },
+    petal: function (p) {
+      ctx.shadowBlur = p.r * 1.7
+      drawPetal(p.r, p)
+    },
+    bubble: function (p) {
+      ctx.shadowBlur = p.r * 2.8
+      drawBubble(p.r)
+    },
+    maple: function (p) {
+      ctx.shadowBlur = p.r * 1.6
+      drawMaple(p.r)
+    },
+    note: function (p) {
+      ctx.shadowBlur = p.r * 2.5
+      drawNote(p.r)
+    },
+    packet: function (p) {
+      ctx.shadowBlur = p.r * 1.8
+      drawPacket(p.r)
+    },
+    dandelion: function (p) {
+      ctx.shadowBlur = p.r * 1.8
+      drawDandelion(p.r)
+    },
+    butterfly: function (p) {
+      ctx.shadowBlur = p.r * 2.2
+      drawButterfly(p.r)
+    },
+    rain: function (p) {
+      ctx.shadowBlur = p.r * 1.2
+      drawRain(p.r, p)
+    },
+    gold: function (p) {
+      ctx.shadowBlur = p.r * 2.2
+      drawGold(p.r)
+    },
+    text: function (p) {
+      ctx.shadowBlur = p.r * 2
+      drawText(p.r, p)
+    },
+    firefly: function (p) {
+      ctx.shadowBlur = p.r * 4.5
+      drawFirefly(p.r, p)
+    },
+    lantern: function (p) {
+      ctx.shadowBlur = p.r * 2.2
+      drawLantern(p.r)
     }
-    ctx.restore()
+  }
+
+  function particleSortKey (p) {
+    const typeKey = typeof p.type === 'number' ? 'n' + p.type : p.type
+    return p.layer + '|' + typeKey
+  }
+
+  function drawParticles () {
+    const sorted = particles.slice().sort(function (a, b) {
+      const ka = particleSortKey(a)
+      const kb = particleSortKey(b)
+      return ka < kb ? -1 : (ka > kb ? 1 : 0)
+    })
+    for (const p of sorted) {
+      const drawer = PARTICLE_DRAWERS[p.type]
+      if (!drawer) continue
+      applyParticleContext(p)
+      drawer(p)
+    }
+    resetParticleTransform()
   }
 
   function updateParticle (particle, windForce, deltaSec, timeSec, audioBoost) {
@@ -1148,6 +1183,7 @@
   }
 
   function drawBursts (deltaSec) {
+    if (burstParticles.length === 0) return
     for (let i = burstParticles.length - 1; i >= 0; i--) {
       const p = burstParticles[i]
       p.x += p.vx * 60 * deltaSec
@@ -1158,7 +1194,6 @@
         burstParticles.splice(i, 1)
         continue
       }
-      ctx.save()
       ctx.globalAlpha = p.life * p.opacity
       ctx.fillStyle = p.color
       ctx.shadowColor = p.glow || 'rgba(255, 255, 255, 0.8)'
@@ -1166,7 +1201,6 @@
       ctx.beginPath()
       ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2)
       ctx.fill()
-      ctx.restore()
     }
   }
 
@@ -1235,7 +1269,7 @@
   }
 
   function drawRipples () {
-    const lineScale = Math.min(Math.max(Math.sqrt(screenScale), 0.85), 1.35)
+    const lineScale = getSizeScale()
     for (const rp of ripples) {
       const alpha = rp.life * 0.35
       ctx.strokeStyle = 'rgba(160, 210, 245, ' + alpha + ')'
@@ -1301,7 +1335,8 @@
         particles.push(createParticle(undefined, -Math.random() * 20, Math.floor(Math.random() * 3)))
       }
     } else if (particles.length > targetCount + 10) {
-      particles.splice(targetCount)
+      const trimIndex = Math.max(0, Math.min(targetCount, particles.length))
+      particles.splice(trimIndex)
     }
   }
 
@@ -1350,10 +1385,13 @@
     // 参数平滑插值（主题切换时的密度/风力/透明度渐变）
     lerpConfigValues(deltaSec)
 
+    // 更新阶段：先更新所有粒子状态
     for (const particle of particles) {
       updateParticle(particle, windForce, deltaSec, timeSec, audioBoost)
-      drawParticle(particle)
     }
+
+    // 绘制阶段：按 (layer, type) 排序后批量绘制
+    drawParticles()
 
     // 雨滴碰底水花和涟漪
     if (config.pattern === 'rain') {
@@ -1449,7 +1487,7 @@
 
   function triggerKeyFeedback () {
     if (!config.keyFeedback) return
-    const sizeScale = Math.min(Math.max(Math.sqrt(screenScale), 0.85), 1.35)
+    const sizeScale = getSizeScale()
     const x = Math.random() * width
     const y = height - 10 - Math.random() * 40
     addBurst(x, y, 5)
@@ -1531,7 +1569,8 @@
       patternTransitionFrames = 0
       transitionTargetPattern = null
     } else if (newConfig.density !== undefined && particles.length > Math.floor(config.density * screenScale)) {
-      particles.splice(Math.floor(config.density * screenScale))
+      const trimIndex = Math.max(0, Math.floor(config.density * screenScale))
+      particles.splice(trimIndex)
     }
   })
 
