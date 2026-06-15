@@ -197,6 +197,8 @@
   let burstParticles = []
   const burstPool = []
   let animId = null
+  let patternTransitionFrames = 0
+  let transitionTargetPattern = null
   let mouseX = -1000
   let mouseY = -1000
   let mouseActive = false
@@ -1264,6 +1266,20 @@
     meltSnowGround()
     drawSnowGround()
 
+    // 图案切换平滑过渡：逐步替换旧粒子为新图案
+    if (patternTransitionFrames > 0) {
+      patternTransitionFrames--
+      const replaceCount = Math.max(1, Math.ceil(particles.length * 0.055))
+      for (let i = 0; i < replaceCount; i++) {
+        const idx = Math.floor(Math.random() * particles.length)
+        Object.assign(particles[idx], createParticle(
+          Math.random() * width,
+          -Math.random() * height * 0.55,
+          particles[idx].layer
+        ))
+      }
+    }
+
     maintainDensity()
   }
 
@@ -1324,10 +1340,9 @@
     const newConfig = event.data.config
     if (!newConfig) return
 
-    const shouldRefresh = newConfig.pattern !== undefined ||
-      newConfig.minSize !== undefined ||
-      newConfig.maxSize !== undefined ||
-      newConfig.theme !== undefined
+    const patternChanged = newConfig.pattern !== undefined && newConfig.pattern !== config.pattern
+    const themeChanged = newConfig.theme !== undefined
+    const sizeChanged = newConfig.minSize !== undefined || newConfig.maxSize !== undefined
     Object.assign(config, newConfig)
 
     // 音效联动开关
@@ -1353,8 +1368,15 @@
       // 取消主题，保留用户当前其他配置
     }
 
-    if (shouldRefresh) {
+    // 图案切换平滑过渡：不立即刷新，而是逐步替换
+    if (patternChanged && !themeChanged && !sizeChanged) {
+      patternTransitionFrames = 55
+      transitionTargetPattern = config.pattern
+    }
+
+    if (themeChanged || sizeChanged) {
       initParticles()
+      patternTransitionFrames = 0
     } else if (newConfig.density !== undefined && particles.length > config.density) {
       particles.splice(config.density)
     }
