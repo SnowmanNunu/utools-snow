@@ -1,4 +1,4 @@
-export const PATTERNS = ['snow', 'star', 'heart', 'petal', 'bubble', 'maple', 'note', 'packet', 'butterfly', 'text', 'rain', 'gold', 'firefly', 'lantern', 'dandelion']
+export const PATTERNS = ['snow', 'star', 'heart', 'petal', 'bubble', 'maple', 'note', 'packet', 'butterfly', 'text', 'rain', 'pumpkin', 'firefly', 'lantern', 'dandelion']
 
 export const PATTERN_PROFILE = {
   snow: {
@@ -100,14 +100,14 @@ export const PATTERN_PROFILE = {
     sway: 0.05,
     rotation: 0
   },
-  gold: {
-    colors: ['#ffd700', '#ffec8b', '#daa520', '#fff8dc'],
-    glow: 'rgba(255, 215, 0, 0.72)',
-    speed: 0.75,
+  pumpkin: {
+    colors: ['#ff7f00', '#ff9a3c', '#e65100'],
+    glow: 'rgba(255, 127, 0, 0.65)',
+    speed: 0.68,
     size: 1.35,
     opacity: 0.92,
-    sway: 1.1,
-    rotation: 0.5
+    sway: 1.15,
+    rotation: 0.4
   },
   text: {
     colors: ['#ffd700', '#ff8c00', '#ff4444'],
@@ -173,7 +173,7 @@ export const THEMES = {
   },
   halloween: {
     label: '万圣节',
-    pattern: 'maple',
+    pattern: 'pumpkin',
     density: 160,
     wind: 0.6,
     opacityMin: 0.45,

@@ -17,7 +17,7 @@ const PATTERN_OPTIONS = [
   { value: 'butterfly', label: '蝴蝶' },
   { value: 'text', label: '福字' },
   { value: 'rain', label: '雨滴' },
-  { value: 'gold', label: '金元宝' },
+  { value: 'pumpkin', label: '南瓜' },
   { value: 'firefly', label: '萤火虫' },
   { value: 'lantern', label: '灯笼' },
   { value: 'dandelion', label: '蒲公英' }
@@ -35,7 +35,7 @@ const PATTERN_COLORS = {
   butterfly: '#ff9ff3',
   text: '#ffd700',
   rain: '#a0d2f5',
-  gold: '#ffd700',
+  pumpkin: '#ff7f00',
   firefly: '#ccff00',
   lantern: '#ff3333',
   dandelion: '#ffffff'

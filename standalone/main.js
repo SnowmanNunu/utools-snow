@@ -40,7 +40,7 @@ const PATTERN_LABELS = {
   butterfly: '🦋 蝴蝶',
   text: '📝 福字',
   rain: '💧 雨滴',
-  gold: '🪙 金元宝',
+  pumpkin: '🎃 南瓜',
   firefly: '✨ 萤火虫',
   lantern: '🏮 灯笼',
   dandelion: '🌼 蒲公英'

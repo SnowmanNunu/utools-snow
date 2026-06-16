@@ -70,15 +70,13 @@ function FuIcon (props) {
   )
 }
 
-function GoldIcon (props) {
+function PumpkinIcon (props) {
   return (
     <SvgIcon {...props} viewBox='0 0 24 24'>
-      <path
-        d='M6 14c0-3 3-5 6-5s6 2 6 5v3H6v-3z'
-        fill='currentColor'
-      />
-      <ellipse cx='12' cy='14' rx='6' ry='2.5' fill='#ffec8b' />
-      <path d='M8 17v3M12 17v4M16 17v3' stroke='currentColor' strokeWidth='1.2' strokeLinecap='round' />
+      <ellipse cx='12' cy='13.5' rx='8' ry='9' fill='currentColor' />
+      <ellipse cx='8' cy='13.5' rx='4.5' ry='8.5' fill='currentColor' />
+      <ellipse cx='16' cy='13.5' rx='4.5' ry='8.5' fill='currentColor' />
+      <path d='M12 5.5v-3' stroke='currentColor' strokeWidth='2.2' strokeLinecap='round' />
     </SvgIcon>
   )
 }
@@ -125,7 +123,7 @@ const ICON_MAP = {
   butterfly: ButterflyIcon,
   text: FuIcon,
   rain: WaterDropIcon,
-  gold: GoldIcon,
+  pumpkin: PumpkinIcon,
   firefly: FlareIcon,
   lantern: LanternIcon,
   dandelion: DandelionIcon

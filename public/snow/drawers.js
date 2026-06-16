@@ -272,48 +272,38 @@ export function drawButterfly (r) {
   ctx.stroke()
 }
 
-export function drawGold (r) {
-  // 中国传统金元宝：中间鼓起、两头翘起
-  const grad = ctx.createLinearGradient(-r, -r, r, r)
-  grad.addColorStop(0, '#b8860b')
-  grad.addColorStop(0.35, '#ffd700')
-  grad.addColorStop(0.65, '#ffec8b')
-  grad.addColorStop(1, '#b8860b')
+export function drawPumpkin (r) {
+  // 南瓜：橙色渐变球体 + 凹凸肋骨 + 绿色瓜蒂
+  const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.5, r * 0.2, 0, 0, r * 1.8)
+  grad.addColorStop(0, '#ffab5c')
+  grad.addColorStop(0.5, '#ff7f00')
+  grad.addColorStop(1, '#e65100')
   ctx.fillStyle = grad
 
-  ctx.beginPath()
-  ctx.moveTo(-r * 1.55, r * 0.35)
-  ctx.quadraticCurveTo(-r * 1.35, -r * 0.75, -r * 0.55, -r * 0.55)
-  ctx.quadraticCurveTo(0, -r * 0.15, r * 0.55, -r * 0.55)
-  ctx.quadraticCurveTo(r * 1.35, -r * 0.75, r * 1.55, r * 0.35)
-  ctx.quadraticCurveTo(r * 0.85, r * 0.95, 0, r * 1.05)
-  ctx.quadraticCurveTo(-r * 0.85, r * 0.95, -r * 1.55, r * 0.35)
-  ctx.closePath()
-  ctx.fill()
-
-  // 元宝口（凹槽）
-  ctx.fillStyle = 'rgba(140, 105, 15, 0.58)'
-  ctx.beginPath()
-  ctx.ellipse(0, -r * 0.22, r * 0.5, r * 0.2, 0, 0, Math.PI * 2)
-  ctx.fill()
-
-  // 外轮廓描边，增强立体感
-  ctx.strokeStyle = 'rgba(180, 140, 30, 0.75)'
+  ctx.strokeStyle = 'rgba(160, 65, 0, 0.55)'
   ctx.lineWidth = Math.max(0.6, r * 0.12)
-  ctx.beginPath()
-  ctx.moveTo(-r * 1.55, r * 0.35)
-  ctx.quadraticCurveTo(-r * 1.35, -r * 0.75, -r * 0.55, -r * 0.55)
-  ctx.quadraticCurveTo(0, -r * 0.15, r * 0.55, -r * 0.55)
-  ctx.quadraticCurveTo(r * 1.35, -r * 0.75, r * 1.55, r * 0.35)
-  ctx.quadraticCurveTo(r * 0.85, r * 0.95, 0, r * 1.05)
-  ctx.quadraticCurveTo(-r * 0.85, r * 0.95, -r * 1.55, r * 0.35)
-  ctx.stroke()
 
-  // 高光
-  ctx.fillStyle = 'rgba(255, 255, 235, 0.72)'
+  // 从外到内画肋骨，中心肋骨在最上层
+  const offsets = [-1.4, 1.4, -0.7, 0.7, 0]
+  for (const ox of offsets) {
+    ctx.beginPath()
+    ctx.ellipse(ox * r * 0.5, r * 0.08, r * 0.72, r * 1.1, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.stroke()
+  }
+
+  // 瓜蒂
+  ctx.fillStyle = '#5a8a3a'
   ctx.beginPath()
-  ctx.ellipse(-r * 0.25, -r * 0.12, r * 0.28, r * 0.1, -Math.PI / 10, 0, Math.PI * 2)
+  ctx.ellipse(0, -r * 1.18, r * 0.22, r * 0.3, 0, 0, Math.PI * 2)
   ctx.fill()
+  ctx.fillRect(-r * 0.1, -r * 1.45, r * 0.2, r * 0.45)
+
+  ctx.strokeStyle = 'rgba(60, 90, 30, 0.6)'
+  ctx.lineWidth = Math.max(0.5, r * 0.1)
+  ctx.beginPath()
+  ctx.ellipse(0, -r * 1.18, r * 0.22, r * 0.3, 0, 0, Math.PI * 2)
+  ctx.stroke()
 }
 
 export function drawText (r, particle) {
@@ -506,9 +496,9 @@ export const PARTICLE_DRAWERS = {
     ctx.shadowBlur = p.r * 1.2
     drawRain(p.r, p)
   },
-  gold: function (p) {
+  pumpkin: function (p) {
     ctx.shadowBlur = p.r * 2.2
-    drawGold(p.r)
+    drawPumpkin(p.r)
   },
   text: function (p) {
     ctx.shadowBlur = p.r * 2
