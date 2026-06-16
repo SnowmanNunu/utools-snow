@@ -162,6 +162,30 @@ export const THEMES = {
     wind: 0.3,
     opacityMin: 0.4,
     opacityMax: 0.9
+  },
+  midAutumn: {
+    label: '中秋',
+    pattern: 'star',
+    density: 140,
+    wind: 0.25,
+    opacityMin: 0.5,
+    opacityMax: 0.95
+  },
+  halloween: {
+    label: '万圣节',
+    pattern: 'maple',
+    density: 160,
+    wind: 0.6,
+    opacityMin: 0.45,
+    opacityMax: 0.9
+  },
+  newYear: {
+    label: '元旦',
+    pattern: 'snow',
+    density: 170,
+    wind: 0.5,
+    opacityMin: 0.5,
+    opacityMax: 1
   }
 }
 

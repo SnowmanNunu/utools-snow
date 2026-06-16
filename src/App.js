@@ -58,7 +58,10 @@ const INTENSITY_MAP = {
 const THEME_MAP = {
   spring: { pattern: 'lantern', density: 180, wind: 0.4 },
   christmas: { pattern: 'snow', density: 160, wind: 0.7 },
-  valentine: { pattern: 'heart', density: 150, wind: 0.3 }
+  valentine: { pattern: 'heart', density: 150, wind: 0.3 },
+  midAutumn: { pattern: 'star', density: 140, wind: 0.25 },
+  halloween: { pattern: 'maple', density: 160, wind: 0.6 },
+  newYear: { pattern: 'snow', density: 170, wind: 0.5 }
 }
 
 const ONBOARDING_KEY = 'snow-onboarding-done'

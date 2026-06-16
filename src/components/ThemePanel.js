@@ -5,11 +5,17 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import FavoriteIcon from '@mui/icons-material/Favorite'
 import AcUnitIcon from '@mui/icons-material/AcUnit'
 import CardGiftcardIcon from '@mui/icons-material/CardGiftcard'
+import NightlightIcon from '@mui/icons-material/Nightlight'
+import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions'
+import CelebrationIcon from '@mui/icons-material/Celebration'
 
 const THEME_OPTIONS = [
   { value: 'spring', label: '春节', icon: CardGiftcardIcon, color: '#ff4444', bg: 'linear-gradient(135deg, #ff4444 0%, #ff6b6b 100%)' },
   { value: 'christmas', label: '圣诞', icon: AcUnitIcon, color: '#4ade80', bg: 'linear-gradient(135deg, #22c55e 0%, #4ade80 100%)' },
-  { value: 'valentine', label: '情人节', icon: FavoriteIcon, color: '#f472b6', bg: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)' }
+  { value: 'valentine', label: '情人节', icon: FavoriteIcon, color: '#f472b6', bg: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)' },
+  { value: 'midAutumn', label: '中秋', icon: NightlightIcon, color: '#f5a623', bg: 'linear-gradient(135deg, #f5a623 0%, #ffd93d 100%)' },
+  { value: 'halloween', label: '万圣节', icon: EmojiEmotionsIcon, color: '#ff7f00', bg: 'linear-gradient(135deg, #ff7f00 0%, #9c27b0 100%)' },
+  { value: 'newYear', label: '元旦', icon: CelebrationIcon, color: '#3b82f6', bg: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)' }
 ]
 
 export default function ThemePanel ({ festivalTheme, onThemeChange }) {
@@ -25,6 +31,7 @@ export default function ThemePanel ({ festivalTheme, onThemeChange }) {
       <Box sx={{
         display: 'flex',
         flexDirection: 'row',
+        flexWrap: 'wrap',
         gap: 0.65
       }}
       >
@@ -38,7 +45,8 @@ export default function ThemePanel ({ festivalTheme, onThemeChange }) {
               onClick={function () { onThemeChange(item.value) }}
               sx={function (theme) {
                 return {
-                  flex: 1,
+                  flex: '1 1 calc(33.333% - 0.45rem)',
+                  minWidth: 80,
                   p: 0.65,
                   borderRadius: 2,
                   display: 'flex',
