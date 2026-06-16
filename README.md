@@ -117,9 +117,9 @@ npm run build
 ```
 
 打包完成后在 `standalone/release/` 目录生成：
-- **Windows**: `snow-desktop-1.0.1-x64.exe`（便携版，双击运行）
-- **macOS**: `snow-desktop-1.0.1-arm64.dmg`
-- **Linux**: `snow-desktop-1.0.1-x64.AppImage`
+- **Windows**: `snow-desktop-1.3.0-x64.exe`（便携版，双击运行）
+- **macOS**: `snow-desktop-1.3.0-arm64.dmg`
+- **Linux**: `snow-desktop-1.3.0-x64.AppImage`
 
 ### 独立版使用说明
 
@@ -128,10 +128,10 @@ npm run build
 3. 粒子窗口**不影响桌面操作**（鼠标可穿透到下层软件）
 4. 随时通过以下方式控制：
    - 控制面板的「停止飘落」按钮
-   - 任务栏右下角 ❄️ **托盘图标** → 右键菜单
+   - 任务栏右下角 ❄️ **托盘图标** → 右键菜单（开始/暂停/停止、切换图案/主题/密度预设）
    - 快捷键 **`Ctrl + Shift + S`** 显示/隐藏控制面板
 
-> 注意：独立版为不影响桌面操作，暂不支持鼠标交互（鼠标推开 / 点击绽放）。
+> 注意：独立版为不影响桌面操作，鼠标交互暂计划 v1.4.0 支持。
 
 ---
 

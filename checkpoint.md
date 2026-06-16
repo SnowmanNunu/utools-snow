@@ -8,7 +8,7 @@
 
 **项目名称**：满屏飘落  
 **项目类型**：uTools 桌面粒子特效插件 + 独立桌面应用  
-**当前版本**：v1.3.0（UI 已完成，功能开发中）  
+**当前版本**：v1.3.0（功能开发完成，待发布）  
 **仓库地址**：
 - GitHub：https://github.com/SnowmanNunu/utools-snow
 - Gitee：https://gitee.com/SnowmanNunu/utools-snow
@@ -79,10 +79,10 @@
 | GitHub Release | ✅ 已发布 v1.2.0，v1.2.1/v1.2.2 已打标签未发 Release | v1.2.2 |
 | Gitee Tag | ✅ 已推送 v1.2.0/v1.2.1/v1.2.2 | v1.2.2 |
 
-独立桌面版安装包（v1.2.0）：
-- Windows：`snow-desktop-1.2.0-x64.exe`
-- macOS：`snow-desktop-1.2.0-arm64.dmg`
-- Linux：`snow-desktop-1.2.0-x64.AppImage`
+独立桌面版安装包（v1.3.0 待发布）：
+- Windows：`snow-desktop-1.3.0-x64.exe`
+- macOS：`snow-desktop-1.3.0-arm64.dmg`
+- Linux：`snow-desktop-1.3.0-x64.AppImage`
 
 ---
 
