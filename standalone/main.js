@@ -4,12 +4,100 @@
  */
 const { app, BrowserWindow, ipcMain, screen, Tray, Menu, globalShortcut } = require('electron')
 const path = require('path')
+const fs = require('fs')
 
 let controlWindow = null
 let snowWindow = null
 let tray = null
 
 const DIST_DIR = path.join(__dirname, 'dist')
+const STATE_PATH = path.join(app.getPath('userData'), 'window-state.json')
+
+const DEFAULT_WINDOW_STATE = {
+  width: 400,
+  height: 680,
+  x: undefined,
+  y: undefined
+}
+
+function loadWindowState () {
+  try {
+    const data = fs.readFileSync(STATE_PATH, 'utf8')
+    const parsed = JSON.parse(data)
+    return { ...DEFAULT_WINDOW_STATE, ...parsed }
+  } catch (e) {
+    return { ...DEFAULT_WINDOW_STATE }
+  }
+}
+
+function saveWindowState (bounds) {
+  try {
+    fs.writeFileSync(STATE_PATH, JSON.stringify(bounds), 'utf8')
+  } catch (e) {
+    // 忽略写入失败
+  }
+}
+
+function ensureWindowVisible (bounds) {
+  if (bounds.x === undefined || bounds.y === undefined) return bounds
+
+  const displays = screen.getAllDisplays()
+  if (!displays || displays.length === 0) return bounds
+
+  const { x, y, width, height } = bounds
+  const centerX = x + width / 2
+  const centerY = y + height / 2
+
+  const visible = displays.some(function (display) {
+    const b = display.workArea
+    return centerX >= b.x && centerX <= b.x + b.width &&
+           centerY >= b.y && centerY <= b.y + b.height
+  })
+
+  if (!visible) {
+    const primary = screen.getPrimaryDisplay().workArea
+    return {
+      ...bounds,
+      x: Math.round(primary.x + (primary.width - width) / 2),
+      y: Math.round(primary.y + (primary.height - height) / 2)
+    }
+  }
+  return bounds
+}
+
+function readControlWindowBounds () {
+  if (!controlWindow || controlWindow.isDestroyed()) return null
+  const size = controlWindow.getSize()
+  const pos = controlWindow.getPosition()
+  return {
+    width: size[0],
+    height: size[1],
+    x: pos[0],
+    y: pos[1]
+  }
+}
+
+function bindWindowStateEvents () {
+  if (!controlWindow) return
+
+  let saveTimeout = null
+  const scheduleSave = function () {
+    if (saveTimeout) clearTimeout(saveTimeout)
+    saveTimeout = setTimeout(function () {
+      const bounds = readControlWindowBounds()
+      if (bounds) saveWindowState(bounds)
+    }, 200)
+  }
+
+  controlWindow.on('resize', scheduleSave)
+  controlWindow.on('move', scheduleSave)
+  controlWindow.on('moved', scheduleSave)
+  controlWindow.on('closed', function () {
+    if (saveTimeout) clearTimeout(saveTimeout)
+    const bounds = readControlWindowBounds()
+    if (bounds) saveWindowState(bounds)
+  })
+}
 
 const DEFAULT_CONFIG = {
   density: 150,
@@ -70,9 +158,14 @@ function createControlWindow () {
     return
   }
 
+  let state = loadWindowState()
+  state = ensureWindowVisible(state)
+
   controlWindow = new BrowserWindow({
-    width: 400,
-    height: 680,
+    width: state.width,
+    height: state.height,
+    x: state.x,
+    y: state.y,
     resizable: true,
     minWidth: 360,
     minHeight: 600,
@@ -87,6 +180,7 @@ function createControlWindow () {
   })
 
   controlWindow.loadFile(path.join(DIST_DIR, 'index.html'))
+  bindWindowStateEvents()
 
   controlWindow.on('closed', function () {
     controlWindow = null
