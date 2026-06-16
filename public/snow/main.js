@@ -2,7 +2,7 @@ import { config, THEMES, lerpConfigValues, patternTransitionFrames, setPatternTr
 import { canvas, ctx, width, height, resize, screenScale } from './viewport.js'
 import { initParticles, updateParticle, maintainDensity, particles, replaceParticle, trimParticles } from './particle.js'
 import { drawParticles } from './drawers.js'
-import { addBurst, drawBursts, updateLightning, drawLightning, updateRainEffects, drawRainEffects, meltSnowGround, drawSnowGround, addSplash, addRipple, addSnowToGround } from './effects.js'
+import { addBurst, drawBursts, updateLightning, drawLightning, updateRainEffects, drawRainEffects, meltSnowGround, drawSnowGround, addSplash, addRipple, addSnowToGround, initSnowGround } from './effects.js'
 import { initAudioReactive, stopAudioReactive, updateAudioLevel, audioLevelSmooth } from './audio.js'
 import { setupInputListeners, triggerKeyFeedback, mouseState } from './input.js'
 import { particlePattern } from './utils.js'
