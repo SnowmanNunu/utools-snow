@@ -73,14 +73,14 @@ function FuIcon (props) {
 function PumpkinIcon (props) {
   return (
     <SvgIcon {...props} viewBox='0 0 24 24'>
-      <ellipse cx='12' cy='14' rx='8' ry='8' fill='currentColor' />
-      <ellipse cx='8.5' cy='14' rx='4' ry='7.5' fill='currentColor' />
-      <ellipse cx='15.5' cy='14' rx='4' ry='7.5' fill='currentColor' />
-      <path d='M12 6.5v-3' stroke='#5a8a3a' strokeWidth='2.2' strokeLinecap='round' />
-      <polygon points='9.5,10.5 10.8,12.5 8.2,12.5' fill='rgba(60,25,0,0.9)' />
-      <polygon points='14.5,10.5 15.8,12.5 13.2,12.5' fill='rgba(60,25,0,0.9)' />
-      <path d='M8 15.5l1.5 1.5 1.5-1.5 1.5 1.5 1.5-1.5 1.5 1.5V17c0 .5-.5 1-1 1H9c-.5 0-1-.5-1-1v-1.5z' fill='rgba(60,25,0,0.9)' />
-      <ellipse cx='9.5' cy='11' rx='1.2' ry='0.8' fill='rgba(255,255,200,0.5)' />
+      <circle cx='12' cy='13' r='9' fill='currentColor' />
+      <ellipse cx='8.5' cy='13' rx='4' ry='8' fill='currentColor' />
+      <ellipse cx='15.5' cy='13' rx='4' ry='8' fill='currentColor' />
+      <path d='M12 4.5v-2.8' stroke='#5a8a3a' strokeWidth='2.2' strokeLinecap='round' />
+      <polygon points='9.2,10.5 10.5,8.2 11.8,10.5' fill='rgba(60,25,0,0.9)' />
+      <polygon points='14.2,10.5 15.5,8.2 16.8,10.5' fill='rgba(60,25,0,0.9)' />
+      <polygon points='12,11.5 11.2,12.8 12.8,12.8' fill='rgba(60,25,0,0.9)' />
+      <path d='M8 15l1.2 1.2 1.2-1.2 1.2 1.2 1.2-1.2 1.2 1.2 1.2-1.2V16c0 .4-.4.8-.8.8H8.8c-.4 0-.8-.4-.8-.8v-1z' fill='rgba(60,25,0,0.9)' />
     </SvgIcon>
   )
 }
