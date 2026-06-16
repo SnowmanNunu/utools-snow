@@ -228,8 +228,37 @@ export default function App () {
       setTheme(e.matches ? 'dark' : 'light')
     }
     darkModeQuery.addEventListener('change', handleThemeChange)
+
+    // 独立版：监听托盘菜单同步过来的配置
+    const handleConfigSync = function (e) {
+      const cfg = e.detail
+      if (!cfg) return
+      if (cfg.density !== undefined) {
+        setDensity(cfg.density)
+        configRef.current.density = cfg.density
+      }
+      if (cfg.wind !== undefined) {
+        setWind(cfg.wind)
+        configRef.current.wind = cfg.wind
+      }
+      if (cfg.pattern !== undefined) {
+        setPattern(cfg.pattern)
+        configRef.current.pattern = cfg.pattern
+      }
+      if (cfg.theme !== undefined) {
+        setFestivalTheme(cfg.theme === null ? null : cfg.theme)
+        configRef.current.theme = cfg.theme === null ? null : cfg.theme
+      }
+      // 根据 density 反推强度预设
+      if (cfg.density === 80) setIntensity('light')
+      else if (cfg.density === 280) setIntensity('heavy')
+      else setIntensity('normal')
+    }
+    window.addEventListener('snow-config-sync', handleConfigSync)
+
     return function () {
       darkModeQuery.removeEventListener('change', handleThemeChange)
+      window.removeEventListener('snow-config-sync', handleConfigSync)
     }
   }, [])
 

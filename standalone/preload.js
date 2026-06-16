@@ -12,6 +12,11 @@ ipcRenderer.on('snow-status', function (event, running) {
   snowRunning = running
 })
 
+// 监听主进程发来的配置同步（托盘菜单修改后同步到控制面板）
+ipcRenderer.on('sync-config', function (event, config) {
+  window.dispatchEvent(new CustomEvent('snow-config-sync', { detail: config }))
+})
+
 // 模拟 uTools API（App.js 用到了 onPluginEnter / onPluginOut / isDarkColors）
 const mockUtools = {
   onPluginEnter: function (callback) {

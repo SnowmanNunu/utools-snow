@@ -27,6 +27,23 @@ const DEFAULT_CONFIG = {
 }
 
 let currentConfig = { ...DEFAULT_CONFIG }
+let currentTheme = null
+let snowPaused = false
+
+const INTENSITY_MAP = {
+  light: { label: '稀疏', density: 80, opacityMin: 0.16, opacityMax: 0.56 },
+  normal: { label: '中等', density: 150, opacityMin: 0.3, opacityMax: 0.9 },
+  heavy: { label: '密集', density: 280, opacityMin: 0.5, opacityMax: 1 }
+}
+
+const THEME_MAP = {
+  spring: { label: '春节', pattern: 'lantern', density: 180, wind: 0.4, opacityMin: 0.55, opacityMax: 1 },
+  christmas: { label: '圣诞', pattern: 'snow', density: 160, wind: 0.7, opacityMin: 0.45, opacityMax: 0.95 },
+  valentine: { label: '情人节', pattern: 'heart', density: 150, wind: 0.3, opacityMin: 0.4, opacityMax: 0.9 },
+  midAutumn: { label: '中秋', pattern: 'star', density: 140, wind: 0.25, opacityMin: 0.5, opacityMax: 0.95 },
+  halloween: { label: '万圣节', pattern: 'pumpkin', density: 160, wind: 0.6, opacityMin: 0.45, opacityMax: 0.9 },
+  newYear: { label: '元旦', pattern: 'packet', density: 170, wind: 0.5, opacityMin: 0.5, opacityMax: 1 }
+}
 
 const PATTERN_LABELS = {
   snow: '❄️ 雪花',
@@ -126,6 +143,7 @@ function createSnowWindow (config) {
 
   snowWindow.on('closed', function () {
     snowWindow = null
+    snowPaused = false
     if (controlWindow && !controlWindow.isDestroyed()) {
       controlWindow.webContents.send('snow-status', false)
     }
@@ -153,8 +171,18 @@ function createTray () {
   })
 }
 
+function syncConfigToControlPanel () {
+  if (controlWindow && !controlWindow.isDestroyed()) {
+    controlWindow.webContents.send('sync-config', {
+      ...currentConfig,
+      theme: currentTheme
+    })
+  }
+}
+
 function updateTrayMenu () {
   const running = snowWindow !== null && !snowWindow.isDestroyed()
+
   const patternMenu = Object.keys(PATTERN_LABELS).map(function (pattern) {
     return {
       label: PATTERN_LABELS[pattern],
@@ -162,19 +190,78 @@ function updateTrayMenu () {
       checked: currentConfig.pattern === pattern,
       click: function () {
         currentConfig.pattern = pattern
+        currentTheme = null
         if (running) {
           snowWindow.webContents.send('snow-config', { pattern: pattern })
         } else {
           createSnowWindow(currentConfig)
         }
+        syncConfigToControlPanel()
         updateTrayMenu()
       }
     }
   })
 
-  const contextMenu = Menu.buildFromTemplate([
+  const intensityMenu = Object.keys(INTENSITY_MAP).map(function (key) {
+    const item = INTENSITY_MAP[key]
+    return {
+      label: item.label,
+      type: 'checkbox',
+      checked: currentConfig.density === item.density,
+      click: function () {
+        currentConfig.density = item.density
+        currentConfig.opacityMin = item.opacityMin
+        currentConfig.opacityMax = item.opacityMax
+        if (running) {
+          snowWindow.webContents.send('snow-config', {
+            density: item.density,
+            opacityMin: item.opacityMin,
+            opacityMax: item.opacityMax
+          })
+        } else {
+          createSnowWindow(currentConfig)
+        }
+        syncConfigToControlPanel()
+        updateTrayMenu()
+      }
+    }
+  })
+
+  const themeMenu = Object.keys(THEME_MAP).map(function (key) {
+    const item = THEME_MAP[key]
+    return {
+      label: item.label,
+      type: 'checkbox',
+      checked: currentTheme === key,
+      click: function () {
+        currentTheme = key
+        currentConfig.pattern = item.pattern
+        currentConfig.density = item.density
+        currentConfig.wind = item.wind
+        currentConfig.opacityMin = item.opacityMin
+        currentConfig.opacityMax = item.opacityMax
+        if (running) {
+          snowWindow.webContents.send('snow-config', {
+            theme: key,
+            pattern: item.pattern,
+            density: item.density,
+            wind: item.wind,
+            opacityMin: item.opacityMin,
+            opacityMax: item.opacityMax,
+            transition: true
+          })
+        } else {
+          createSnowWindow(currentConfig)
+        }
+        syncConfigToControlPanel()
+        updateTrayMenu()
+      }
+    }
+  })
+
+  const template = [
     {
-      label: running ? '❄️ 正在飘落' : '⏹️ 已停止',
+      label: running ? (snowPaused ? '⏸️ 已暂停' : '❄️ 正在飘落') : '⏹️ 已停止',
       enabled: false
     },
     { type: 'separator' },
@@ -185,20 +272,47 @@ function updateTrayMenu () {
       }
     },
     {
-      label: running ? '停止飘落' : '开始飘落',
+      label: running ? (snowPaused ? '▶️ 继续飘落' : '⏸️ 暂停飘落') : '开始飘落',
       click: function () {
-        if (running) {
-          closeSnowWindow()
-        } else {
+        if (!running) {
+          snowPaused = false
           createSnowWindow(currentConfig)
+        } else if (snowPaused) {
+          snowPaused = false
+          snowWindow.webContents.send('resume-snow')
+        } else {
+          snowPaused = true
+          snowWindow.webContents.send('pause-snow')
         }
         updateTrayMenu()
       }
-    },
+    }
+  ]
+
+  if (running) {
+    template.push({
+      label: '⏹ 停止飘落',
+      click: function () {
+        closeSnowWindow()
+        snowPaused = false
+        updateTrayMenu()
+      }
+    })
+  }
+
+  template.push(
     { type: 'separator' },
     {
       label: '🎨 切换图案',
       submenu: patternMenu
+    },
+    {
+      label: '🎭 切换主题',
+      submenu: themeMenu
+    },
+    {
+      label: '🔢 密度预设',
+      submenu: intensityMenu
     },
     { type: 'separator' },
     {
@@ -207,7 +321,9 @@ function updateTrayMenu () {
         app.quit()
       }
     }
-  ])
+  )
+
+  const contextMenu = Menu.buildFromTemplate(template)
   tray.setContextMenu(contextMenu)
 }
 
@@ -215,6 +331,7 @@ function updateTrayMenu () {
 ipcMain.on('create-snow', function (event, config) {
   if (!snowWindow || snowWindow.isDestroyed()) {
     createSnowWindow(config)
+    snowPaused = false
     updateTrayMenu()
   } else {
     snowWindow.webContents.send('snow-config', config)
@@ -224,6 +341,9 @@ ipcMain.on('create-snow', function (event, config) {
 ipcMain.on('update-snow-config', function (event, config) {
   if (config) {
     currentConfig = { ...currentConfig, ...config }
+    if (config.theme !== undefined) {
+      currentTheme = config.theme === null ? null : config.theme
+    }
   }
   if (snowWindow && !snowWindow.isDestroyed()) {
     snowWindow.webContents.send('snow-config', currentConfig)
@@ -239,6 +359,7 @@ ipcMain.on('key-feedback', function () {
 
 ipcMain.on('close-snow', function () {
   closeSnowWindow()
+  snowPaused = false
   updateTrayMenu()
 })
 

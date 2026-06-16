@@ -230,6 +230,19 @@ export function stop () {
   window.removeEventListener('resize', onResize)
 }
 
+export function pause () {
+  if (animId) {
+    cancelAnimationFrame(animId)
+    animId = null
+  }
+}
+
+export function resume () {
+  if (animId) return
+  lastTime = 0
+  animId = requestAnimationFrame(animate)
+}
+
 export function setConfig (cfg) {
   const shouldRefresh = cfg && (cfg.pattern !== undefined || cfg.minSize !== undefined || cfg.maxSize !== undefined)
   Object.assign(config, cfg)
@@ -243,5 +256,7 @@ export function setConfig (cfg) {
 window.snowControl = {
   start: start,
   stop: stop,
+  pause: pause,
+  resume: resume,
   setConfig: setConfig
 }
