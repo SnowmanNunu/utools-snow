@@ -153,6 +153,36 @@ npm run build:utools
 2. 上传 `dist/` 目录打包的插件包
 3. 提交审核
 
+### 4.5 项目截图资产维护
+
+项目截图统一存放在：
+
+```
+assets/screenshots/
+```
+
+当前截图：
+
+| 文件 | 用途 |
+|------|------|
+| `screenshot-snow.png` | 粒子飘落效果展示 |
+| `screenshot-panel.png` | 控制面板界面展示 |
+
+每次大版本更新（如新增主题、UI 改版）后，应重新截取最新界面并替换这些截图。
+
+截图生成方式：
+
+1. 执行构建：
+   ```bash
+   npm run build
+   ```
+
+2. 使用 Chrome headless 截取真实运行页面（可参考项目内历史截图参数）
+
+3. 将新截图放入 `assets/screenshots/`，替换旧图
+
+4. 如果 README / 市场介绍 / Release 中引用了截图路径，同步更新引用
+
 ---
 
 ## 5. 线上紧急修复（Hotfix）
