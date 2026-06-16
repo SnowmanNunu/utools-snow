@@ -2,7 +2,8 @@
   "private": true,
   "scripts": {
     "dev": "webpack -w --mode development",
-    "build": "webpack --mode production"
+    "build": "webpack --mode production",
+    "build:utools": "webpack --mode production && node scripts/prepare-utools.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

@@ -186,7 +186,7 @@ utools-snow-src/
 
 3. **uTools 发布提示 Logo 过大**
    - 原因：uTools 建议 Logo 不超过 256×256
-   - 解决：uTools 发布目录单独使用 256×256 logo，源码保留 512×512
+   - 解决：源码保留 512×512 的 `public/logo.png` 用于桌面版打包；新增 `public/logo-256.png`，并通过 `npm run build:utools` 自动替换 `dist/logo.png`
 
 4. **GitHub Release 文件名中文被过滤**
    - 原因：`productName` 为中文字符，electron-builder 过滤后只剩版本号

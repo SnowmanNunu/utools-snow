@@ -137,13 +137,21 @@ GitHub Actions 监听 `v*` 标签，自动：
 
 ### 4.4 uTools 插件市场
 
-1. 本地执行构建：
-   ```bash
-   npm run build
-   ```
-2. 登录 [uTools 开发者后台](https://developer.u-tools.cn/)
-3. 上传 `dist/` 或指定插件包
-4. 提交审核
+uTools 插件市场对 `logo.png` 尺寸有要求（建议不超过 256×256），而独立桌面版打包需要 512×512 的图标。
+
+因此发布 uTools 时使用专用构建命令：
+
+```bash
+npm run build:utools
+```
+
+该命令会先执行普通构建，再自动将 `dist/logo.png` 替换为 256×256 版本。
+
+然后：
+
+1. 登录 [uTools 开发者后台](https://developer.u-tools.cn/)
+2. 上传 `dist/` 目录打包的插件包
+3. 提交审核
 
 ---
 
