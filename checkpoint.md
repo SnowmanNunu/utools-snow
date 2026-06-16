@@ -1,6 +1,6 @@
 # 📝 项目Checkpoint — 满屏飘落
 
-> 最后更新：2026-06-15
+> 最后更新：2026-06-16
 
 ---
 
@@ -8,7 +8,7 @@
 
 **项目名称**：满屏飘落  
 **项目类型**：uTools 桌面粒子特效插件 + 独立桌面应用  
-**当前版本**：v1.2.0（待发布）  
+**当前版本**：v1.3.0（开发中，UI 已完成）  
 **仓库地址**：
 - GitHub：https://github.com/SnowmanNunu/utools-snow
 - Gitee：https://gitee.com/SnowmanNunu/utools-snow
@@ -63,8 +63,14 @@
 - [x] 模块化 `snow.js`：拆分为 particle / drawers / effects / audio
 - [x] 配置集中化：颜色、速度、大小统一配置表
 
-### v1.3.0（UI 重设计中）
-- [ ] UI 重设计（包含选中状态强化、Hover 反馈、首次使用引导等 UI 细节）
+### v1.3.0（UI 已完成，待发布）
+- [x] UI 重设计：单页沉浸式控制面板，侧边栏移除，图案/主题/环境/交互一屏操作
+- [x] 选中状态强化：图案卡片蓝色边框 + 阴影 + 对勾，主题卡片高亮
+- [x] Hover 反馈与玻璃拟态卡片
+- [x] 首次使用引导：3 步引导浮层，localStorage 记忆完成状态
+- [x] 自定义 PatternIcon：图标更接近实际飘落粒子
+- [x] 隐藏滚动条，整体压缩至一屏内
+- [x] 修复 `snow/main.js` 缺失 `initSnowGround` 导入导致粒子不飘落的 bug
 - [ ] 更多节日主题：中秋、万圣节、元旦等
 - [ ] 独立桌面版支持临时鼠标交互（按住指定键关闭穿透）
 - [ ] 粒子图案自定义：支持用户上传图片/文字作为粒子
@@ -121,7 +127,17 @@ utools-snow-src/
 ├── src/                    # React 设置面板源码
 │   ├── App.js              # 主界面
 │   ├── index.js            # React 入口
-│   └── index.less          # 样式
+│   ├── index.less          # 样式
+│   └── components/         # 面板组件
+│       ├── Header.js
+│       ├── PatternPanel.js
+│       ├── PatternIcon.js
+│       ├── ThemePanel.js
+│       ├── EnvironmentPanel.js
+│       ├── InteractionPanel.js
+│       ├── FloatingActionButton.js
+│       ├── Sidebar.js
+│       └── OnboardingTooltip.js
 ├── bridge/
 │   └── preload.js          # uTools 版 preload
 ├── standalone/             # 独立桌面版
@@ -226,9 +242,9 @@ utools-snow-src/
 - [ ] 控制面板窗口位置记忆
 
 #### UI 细节（v1.3.0）
-- [ ] 选中状态强化（图案/主题）
-- [ ] Hover 反馈与开关提示
-- [ ] 首次使用引导
+- [x] 选中状态强化（图案/主题）
+- [x] Hover 反馈与开关提示
+- [x] 首次使用引导
 
 ---
 
@@ -263,7 +279,8 @@ utools-snow-src/
 ## 🎯 下一步行动
 
 1. v1.2.1 / v1.2.2 标签已打好，后续需要发布时再生成 GitHub Release、推送 Gitee Tag、提交 uTools 审核
-2. 创建 v1.3.0 开发分支，启动 UI 重设计
+2. v1.3.0 UI 重设计已完成，继续开发更多节日主题、粒子自定义等功能
+3. v1.3.0 功能完成后发布 GitHub Release、uTools 市场审核
 
 ---
 
@@ -274,12 +291,12 @@ utools-snow-src/
 - **v1.2.0 核心功能**：100% 完成（已发布）
 - **v1.2.1 优化打磨**：100% 完成（已打标签，暂不发布）
 - **v1.2.2 代码质量重构**：100% 完成（已打标签，暂不发布）
+- **v1.3.0 UI 重设计**：100% 完成（开发中，待发布）
 - **性能与流畅度优化**：约 75% 完成
-- **视觉与交互体验**：约 80% 完成
+- **视觉与交互体验**：约 90% 完成
 - **独立版体验增强**：尚未开始（归入 v1.3.0）
-- **UI 细节打磨**：尚未开始（归入 v1.3.0）
 
-**整体项目完成度约 75%**，v1.2.x 阶段已全部完成，后续重点为 v1.3.0 UI 重设计与功能升级。
+**整体项目完成度约 80%**，v1.2.x 阶段已全部完成，v1.3.0 UI 已完成，后续重点为更多节日主题、粒子自定义等功能。
 
 ---
 
