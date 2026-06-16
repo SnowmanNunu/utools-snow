@@ -181,7 +181,7 @@ export const THEMES = {
   },
   newYear: {
     label: '元旦',
-    pattern: 'snow',
+    pattern: 'packet',
     density: 170,
     wind: 0.5,
     opacityMin: 0.5,

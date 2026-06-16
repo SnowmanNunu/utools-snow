@@ -273,37 +273,83 @@ export function drawButterfly (r) {
 }
 
 export function drawPumpkin (r) {
-  // 南瓜：橙色渐变球体 + 凹凸肋骨 + 绿色瓜蒂
-  const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.5, r * 0.2, 0, 0, r * 1.8)
-  grad.addColorStop(0, '#ffab5c')
-  grad.addColorStop(0.5, '#ff7f00')
-  grad.addColorStop(1, '#e65100')
-  ctx.fillStyle = grad
+  // 南瓜：圆润主体 + 纵向肋骨 + 绿色瓜蒂 + 高光
+  const bodyGrad = ctx.createRadialGradient(-r * 0.25, -r * 0.35, r * 0.15, 0, 0, r * 1.6)
+  bodyGrad.addColorStop(0, '#ffaa55')
+  bodyGrad.addColorStop(0.45, '#ff7f00')
+  bodyGrad.addColorStop(1, '#cc5500')
+  ctx.fillStyle = bodyGrad
 
-  ctx.strokeStyle = 'rgba(160, 65, 0, 0.55)'
-  ctx.lineWidth = Math.max(0.6, r * 0.12)
+  // 主体
+  ctx.beginPath()
+  ctx.ellipse(0, r * 0.05, r * 1.1, r * 1.0, 0, 0, Math.PI * 2)
+  ctx.fill()
 
-  // 从外到内画肋骨，中心肋骨在最上层
-  const offsets = [-1.4, 1.4, -0.7, 0.7, 0]
-  for (const ox of offsets) {
+  // 纵向肋骨
+  ctx.strokeStyle = 'rgba(160, 60, 0, 0.5)'
+  ctx.lineWidth = Math.max(0.8, r * 0.15)
+  for (let i = -2; i <= 2; i++) {
+    if (i === 0) continue
     ctx.beginPath()
-    ctx.ellipse(ox * r * 0.5, r * 0.08, r * 0.72, r * 1.1, 0, 0, Math.PI * 2)
-    ctx.fill()
+    ctx.ellipse(i * r * 0.32, r * 0.05, r * 0.55, r * 0.95, 0, 0, Math.PI * 2)
     ctx.stroke()
   }
 
-  // 瓜蒂
-  ctx.fillStyle = '#5a8a3a'
+  // 外轮廓
+  ctx.strokeStyle = 'rgba(130, 50, 0, 0.75)'
+  ctx.lineWidth = Math.max(1, r * 0.18)
   ctx.beginPath()
-  ctx.ellipse(0, -r * 1.18, r * 0.22, r * 0.3, 0, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.fillRect(-r * 0.1, -r * 1.45, r * 0.2, r * 0.45)
-
-  ctx.strokeStyle = 'rgba(60, 90, 30, 0.6)'
-  ctx.lineWidth = Math.max(0.5, r * 0.1)
-  ctx.beginPath()
-  ctx.ellipse(0, -r * 1.18, r * 0.22, r * 0.3, 0, 0, Math.PI * 2)
+  ctx.ellipse(0, r * 0.05, r * 1.1, r * 1.0, 0, 0, Math.PI * 2)
   ctx.stroke()
+
+  // 瓜蒂
+  ctx.fillStyle = '#4a7c2a'
+  ctx.beginPath()
+  ctx.ellipse(0, -r * 1.05, r * 0.25, r * 0.25, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillRect(-r * 0.12, -r * 1.35, r * 0.24, r * 0.45)
+
+  ctx.strokeStyle = 'rgba(50, 80, 20, 0.7)'
+  ctx.lineWidth = Math.max(0.6, r * 0.12)
+  ctx.beginPath()
+  ctx.ellipse(0, -r * 1.05, r * 0.25, r * 0.25, 0, 0, Math.PI * 2)
+  ctx.stroke()
+
+  // 高光
+  ctx.fillStyle = 'rgba(255, 230, 180, 0.5)'
+  ctx.beginPath()
+  ctx.ellipse(-r * 0.35, -r * 0.25, r * 0.25, r * 0.15, -Math.PI / 6, 0, Math.PI * 2)
+  ctx.fill()
+
+  // 南瓜灯表情（尺寸足够大时绘制）
+  if (r > 2.2) {
+    ctx.fillStyle = 'rgba(60, 25, 0, 0.88)'
+    // 左眼
+    ctx.beginPath()
+    ctx.moveTo(-r * 0.42, -r * 0.22)
+    ctx.lineTo(-r * 0.18, -r * 0.52)
+    ctx.lineTo(r * 0.02, -r * 0.22)
+    ctx.closePath()
+    ctx.fill()
+    // 右眼
+    ctx.beginPath()
+    ctx.moveTo(r * 0.42, -r * 0.22)
+    ctx.lineTo(r * 0.18, -r * 0.52)
+    ctx.lineTo(-r * 0.02, -r * 0.22)
+    ctx.closePath()
+    ctx.fill()
+    // 锯齿嘴
+    ctx.beginPath()
+    ctx.moveTo(-r * 0.55, r * 0.12)
+    ctx.lineTo(-r * 0.38, r * 0.42)
+    ctx.lineTo(-r * 0.18, r * 0.18)
+    ctx.lineTo(0, r * 0.42)
+    ctx.lineTo(r * 0.18, r * 0.18)
+    ctx.lineTo(r * 0.38, r * 0.42)
+    ctx.lineTo(r * 0.55, r * 0.22)
+    ctx.quadraticCurveTo(0, r * 0.82, -r * 0.55, r * 0.12)
+    ctx.fill()
+  }
 }
 
 export function drawText (r, particle) {

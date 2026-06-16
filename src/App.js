@@ -61,7 +61,7 @@ const THEME_MAP = {
   valentine: { pattern: 'heart', density: 150, wind: 0.3 },
   midAutumn: { pattern: 'star', density: 140, wind: 0.25 },
   halloween: { pattern: 'pumpkin', density: 160, wind: 0.6 },
-  newYear: { pattern: 'snow', density: 170, wind: 0.5 }
+  newYear: { pattern: 'packet', density: 170, wind: 0.5 }
 }
 
 const ONBOARDING_KEY = 'snow-onboarding-done'

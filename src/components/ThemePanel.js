@@ -15,7 +15,7 @@ const THEME_OPTIONS = [
   { value: 'valentine', label: '情人节', icon: FavoriteIcon, color: '#f472b6', bg: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)' },
   { value: 'midAutumn', label: '中秋', icon: NightlightIcon, color: '#f5a623', bg: 'linear-gradient(135deg, #f5a623 0%, #ffd93d 100%)' },
   { value: 'halloween', label: '万圣节', icon: EmojiEmotionsIcon, color: '#ff7f00', bg: 'linear-gradient(135deg, #ff7f00 0%, #9c27b0 100%)' },
-  { value: 'newYear', label: '元旦', icon: CelebrationIcon, color: '#3b82f6', bg: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)' }
+  { value: 'newYear', label: '元旦', icon: CelebrationIcon, color: '#e63946', bg: 'linear-gradient(135deg, #e63946 0%, #ffb703 100%)' }
 ]
 
 export default function ThemePanel ({ festivalTheme, onThemeChange }) {
