@@ -5,89 +5,62 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      prerelease:
+        description: '是否为预发布版本'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+# 防止多个发布流程同时运行，避免 Release 冲突
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
 
+env:
+  # Electron 国内镜像，加速下载
+  ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+  # Node.js 版本统一配置
+  NODE_VERSION: '20'
+
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  # ---------- 1. 校验版本 ----------
+  validate:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install root dependencies
-        run: npm install
-
-      - name: Build plugin
-        run: npm run build
-
-      - name: Copy dist & public to standalone
+      - name: Validate tag version
+        shell: bash
         run: |
-          cp -r dist standalone/dist
-          cp -r public standalone/public
+          TAG=${GITHUB_REF_NAME}
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+            echo "Invalid tag format: $TAG"
+            exit 1
+          fi
+          echo "Tag version: $TAG"
 
-      - name: Install standalone dependencies
-        working-directory: ./standalone
-        run: npm install
-
-      - name: Build Windows portable
-        working-directory: ./standalone
-        run: npx electron-builder --win
-        env:
-          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
-
-      - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows
-          path: standalone/release/*.exe
-
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install root dependencies
-        run: npm install
-
-      - name: Build plugin
-        run: npm run build
-
-      - name: Copy dist & public to standalone
+      - name: Check standalone version consistency
+        shell: bash
         run: |
-          cp -r dist standalone/dist
-          cp -r public standalone/public
+          TAG_VERSION=${GITHUB_REF_NAME#v}
+          PKG_VERSION=$(node -p "require('./standalone/package.json').version")
+          echo "Tag version (without v): $TAG_VERSION"
+          echo "Standalone package version: $PKG_VERSION"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::warning::standalone/package.json version ($PKG_VERSION) does not match tag ($TAG_VERSION). CI will auto-sync it."
+          fi
 
-      - name: Install standalone dependencies
-        working-directory: ./standalone
-        run: npm install
-
-      - name: Build macOS dmg
-        working-directory: ./standalone
-        run: npx electron-builder --mac
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
-
-      - name: Upload macOS artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos
-          path: standalone/release/*.dmg
-
-  build-linux:
+  # ---------- 2. 构建插件（只构建一次，产物共享） ----------
+  build-plugin:
+    needs: validate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -96,44 +69,121 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      - name: Install system dependencies
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Upload plugin artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-build
+          path: |
+            dist
+            public
+          retention-days: 7
+
+  # ---------- 3. 构建桌面端（三平台并行） ----------
+  build-desktop:
+    needs: build-plugin
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+            ext: exe
+            artifact: windows
+          - os: macos-latest
+            platform: mac
+            ext: dmg
+            artifact: macos
+          - os: ubuntu-latest
+            platform: linux
+            ext: AppImage
+            artifact: linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            standalone/package-lock.json
+
+      - name: Install Linux system dependencies
+        if: matrix.platform == 'linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y icnsutils graphicsmagick
 
-      - name: Install root dependencies
-        run: npm install
+      - name: Download plugin artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: plugin-build
+          path: ./standalone
 
-      - name: Build plugin
-        run: npm run build
-
-      - name: Copy dist & public to standalone
+      - name: Sync version to standalone/package.json
+        shell: bash
         run: |
-          cp -r dist standalone/dist
-          cp -r public standalone/public
+          TAG_VERSION=${GITHUB_REF_NAME#v}
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('./standalone/package.json', 'utf8'));
+            pkg.version = '$TAG_VERSION';
+            fs.writeFileSync('./standalone/package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          echo "Synced standalone version to $TAG_VERSION"
 
       - name: Install standalone dependencies
         working-directory: ./standalone
         run: npm install
 
-      - name: Build Linux AppImage
+      - name: Build desktop package
         working-directory: ./standalone
-        run: npx electron-builder --linux
         env:
-          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+          # macOS：暂时关闭自动签名发现，使用未签名构建
+          # 后续如需签名，删除下面这行并配置 APPLE_ID / APPLE_PASSWORD / CSC_*
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Upload Linux artifact
+          # Windows 代码签名（未配置时留空，使用未签名构建）
+          # WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          # WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+
+          # macOS 代码签名与公证（未配置时留空）
+          # APPLE_ID: ${{ secrets.APPLE_ID }}
+          # APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          # TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # CSC_LINK: ${{ secrets.CSC_LINK }}
+          # CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: npx electron-builder --${{ matrix.platform }}
+
+      - name: Upload desktop artifact
         uses: actions/upload-artifact@v4
         with:
-          name: linux
-          path: standalone/release/*.AppImage
+          name: ${{ matrix.artifact }}
+          path: standalone/release/*.${{ matrix.ext }}
+          retention-days: 30
 
+  # ---------- 4. 创建 Release ----------
   release:
-    needs: [build-windows, build-macos, build-linux]
+    needs: build-desktop
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -142,55 +192,56 @@ jobs:
       - name: List artifacts
         run: ls -R artifacts
 
-      - name: Create Release
+      - name: Generate release notes
+        id: changelog
+        shell: bash
+        run: |
+          TAG=${GITHUB_REF_NAME}
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+          # 尝试从 CHANGELOG.md 提取当前版本内容
+          if [ -f CHANGELOG.md ]; then
+            # 提取 ## [vX.Y.Z] 到下一个 ## 之间的内容
+            awk '/^## \['"${TAG#v}"'\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md > release_notes.md || true
+          fi
+
+          if [ ! -s release_notes.md ]; then
+            cat > release_notes.md <<EOF
+          ## 🎉 满屏飘落 $TAG
+
+          唯美治愈桌面粒子特效，为你的屏幕增添浪漫氛围。
+
+          ### 📥 下载地址
+
+          #### Windows
+          - **便携版（推荐）**：\`snow-desktop-$TAG-x64.exe\` — 双击即可运行，无需安装
+
+          #### macOS
+          - **DMG 安装包**：\`snow-desktop-$TAG-arm64.dmg\`
+
+          #### Linux
+          - **AppImage**：\`snow-desktop-$TAG-x64.AppImage\` — 赋予执行权限后双击运行
+
+          ---
+
+          ### 📝 说明
+
+          - 独立桌面版无需安装 uTools
+          - 粒子窗口不影响桌面操作（鼠标可穿透）
+          - 任务栏托盘图标 + \`Ctrl+Shift+S\` 快捷键可随时呼出控制面板
+          EOF
+          fi
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          name: 满屏飘落 ${{ github.ref_name }}
-          body: |
-            ## 🎉 满屏飘落 ${{ github.ref_name }}
-
-            唯美治愈桌面粒子特效，为你的屏幕增添浪漫氛围。
-
-            ---
-
-            ### ✨ 更新内容
-
-            详见 [CHANGELOG](../CHANGELOG.md) 或下方版本说明。
-
-            ---
-
-            ### 📥 下载地址
-
-            #### Windows
-            - **便携版（推荐）**：`snow-desktop-${{ github.ref_name }}-x64.exe` — 双击即可运行，无需安装
-
-            #### macOS
-            - **DMG 安装包**：`snow-desktop-${{ github.ref_name }}-arm64.dmg`
-
-            #### Linux
-            - **AppImage**：`snow-desktop-${{ github.ref_name }}-x64.AppImage` — 赋予执行权限后双击运行
-
-            ---
-
-            ### 🚀 快速开始
-
-            1. 根据你的系统下载对应版本
-            2. Windows：直接双击 `.exe` 运行
-            3. macOS：打开 `.dmg`，将应用拖入 Applications
-            4. Linux：`chmod +x *.AppImage` 后双击运行
-
-            ---
-
-            ### 📝 说明
-
-            - 独立桌面版无需安装 uTools
-            - 粒子窗口不影响桌面操作（鼠标可穿透）
-            - 任务栏托盘图标 + `Ctrl+Shift+S` 快捷键可随时呼出控制面板
+          name: 满屏飘落 ${{ steps.changelog.outputs.tag }}
+          body_path: release_notes.md
           files: |
             artifacts/windows/*
             artifacts/macos/*
             artifacts/linux/*
           draft: false
-          prerelease: false
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
