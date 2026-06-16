@@ -1,30 +1,13 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { createTheme, ThemeProvider } from '@mui/material/styles'
-import {
-  Box, Typography, Button, Slider, Stack, Paper,
-  ToggleButtonGroup, ToggleButton, Switch, FormControlLabel
-} from '@mui/material'
-import AcUnitIcon from '@mui/icons-material/AcUnit'
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
-import FavoriteIcon from '@mui/icons-material/Favorite'
-import LocalFloristIcon from '@mui/icons-material/LocalFlorist'
-import BubbleChartIcon from '@mui/icons-material/BubbleChart'
-import ParkIcon from '@mui/icons-material/Park'
-import MusicNoteIcon from '@mui/icons-material/MusicNote'
-import CardGiftcardIcon from '@mui/icons-material/CardGiftcard'
-import WaterDropIcon from '@mui/icons-material/WaterDrop'
-import SpaIcon from '@mui/icons-material/Spa'
-import PaletteIcon from '@mui/icons-material/Palette'
-import TextFieldsIcon from '@mui/icons-material/TextFields'
-import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
-import FlareIcon from '@mui/icons-material/Flare'
-import WbIncandescentIcon from '@mui/icons-material/WbIncandescent'
-import WindPowerIcon from '@mui/icons-material/WindPower'
-import AirIcon from '@mui/icons-material/Air'
-import SpeedIcon from '@mui/icons-material/Speed'
-import PlayArrowIcon from '@mui/icons-material/PlayArrow'
-import StopIcon from '@mui/icons-material/Stop'
-import MouseIcon from '@mui/icons-material/Mouse'
+import { Box, Stack } from '@mui/material'
+
+import Header from './components/Header'
+import PatternPanel from './components/PatternPanel'
+import EnvironmentPanel from './components/EnvironmentPanel'
+import ThemePanel from './components/ThemePanel'
+import InteractionPanel from './components/InteractionPanel'
+import OnboardingTooltip, { STEPS } from './components/OnboardingTooltip'
 
 const THEME_DIC = {
   light: createTheme({
@@ -72,35 +55,13 @@ const INTENSITY_MAP = {
   heavy: { density: 280, opacityMin: 0.5, opacityMax: 1 }
 }
 
-const PATTERN_OPTIONS = [
-  { value: 'snow', label: '雪花', icon: <AcUnitIcon fontSize='small' /> },
-  { value: 'star', label: '星星', icon: <AutoAwesomeIcon fontSize='small' /> },
-  { value: 'heart', label: '爱心', icon: <FavoriteIcon fontSize='small' /> },
-  { value: 'petal', label: '花瓣', icon: <LocalFloristIcon fontSize='small' /> },
-  { value: 'bubble', label: '泡泡', icon: <BubbleChartIcon fontSize='small' /> },
-  { value: 'maple', label: '枫叶', icon: <ParkIcon fontSize='small' /> },
-  { value: 'note', label: '音符', icon: <MusicNoteIcon fontSize='small' /> },
-  { value: 'packet', label: '红包', icon: <CardGiftcardIcon fontSize='small' /> },
-  { value: 'butterfly', label: '蝴蝶', icon: <PaletteIcon fontSize='small' /> },
-  { value: 'text', label: '福字', icon: <TextFieldsIcon fontSize='small' /> },
-  { value: 'rain', label: '雨滴', icon: <WaterDropIcon fontSize='small' /> },
-  { value: 'gold', label: '金元宝', icon: <MonetizationOnIcon fontSize='small' /> },
-  { value: 'firefly', label: '萤火虫', icon: <FlareIcon fontSize='small' /> },
-  { value: 'lantern', label: '灯笼', icon: <WbIncandescentIcon fontSize='small' /> },
-  { value: 'dandelion', label: '蒲公英', icon: <SpaIcon fontSize='small' /> }
-]
-
-const THEME_OPTIONS = [
-  { value: 'spring', label: '春节', icon: <CardGiftcardIcon fontSize='small' /> },
-  { value: 'christmas', label: '圣诞', icon: <AcUnitIcon fontSize='small' /> },
-  { value: 'valentine', label: '情人节', icon: <FavoriteIcon fontSize='small' /> }
-]
-
 const THEME_MAP = {
   spring: { pattern: 'lantern', density: 180, wind: 0.4 },
   christmas: { pattern: 'snow', density: 160, wind: 0.7 },
   valentine: { pattern: 'heart', density: 150, wind: 0.3 }
 }
+
+const ONBOARDING_KEY = 'snow-onboarding-done'
 
 export default function App () {
   const [theme, setTheme] = useState(
@@ -117,6 +78,14 @@ export default function App () {
   const [snowAccumulation, setSnowAccumulation] = useState(DEFAULT_CONFIG.snowAccumulation)
   const [mouseVortex, setMouseVortex] = useState(DEFAULT_CONFIG.mouseVortex)
 
+  const [onboardingStep, setOnboardingStep] = useState(function () {
+    try {
+      return localStorage.getItem(ONBOARDING_KEY) ? STEPS.length : 0
+    } catch (e) {
+      return 0
+    }
+  })
+
   const configRef = useRef({ ...DEFAULT_CONFIG })
   const runningRef = useRef(false)
 
@@ -127,24 +96,22 @@ export default function App () {
     }
   }, [])
 
-  const startSnow = useCallback(function () {
-    if (window.services) {
-      window.services.createSnowWindow(configRef.current)
-      runningRef.current = true
-      setSnowRunning(true)
-    }
-  }, [])
+  function startSnow () {
+    if (!window.services) return
+    window.services.createSnowWindow(configRef.current)
+    runningRef.current = true
+    setSnowRunning(true)
+  }
 
-  const stopSnow = useCallback(function () {
-    if (window.services) {
-      window.services.closeSnowWindow()
-      runningRef.current = false
-      setSnowRunning(false)
-    }
-  }, [])
+  function stopSnow () {
+    if (!window.services) return
+    window.services.closeSnowWindow()
+    runningRef.current = false
+    setSnowRunning(false)
+  }
 
-  function handleIntensityChange (event, newIntensity) {
-    if (newIntensity === null) return
+  function handleIntensityChange (newIntensity) {
+    if (!newIntensity) return
     setIntensity(newIntensity)
     const cfg = INTENSITY_MAP[newIntensity]
     setDensity(cfg.density)
@@ -161,8 +128,8 @@ export default function App () {
     updateConfig({ wind: value })
   }
 
-  function handlePatternChange (event, newPattern) {
-    if (newPattern === null || newPattern === undefined) return
+  function handlePatternChange (newPattern) {
+    if (!newPattern) return
     setPattern(newPattern)
     if (festivalTheme) {
       setFestivalTheme(null)
@@ -184,7 +151,7 @@ export default function App () {
     updateConfig({ burstOnClick: checked })
   }
 
-  function handleFestivalThemeChange (event, newTheme) {
+  function handleFestivalThemeChange (newTheme) {
     if (!newTheme || newTheme === festivalTheme) {
       setFestivalTheme(null)
       updateConfig({ theme: null })
@@ -209,6 +176,26 @@ export default function App () {
     const checked = event.target.checked
     setMouseVortex(checked)
     updateConfig({ mouseVortex: checked })
+  }
+
+  function handleOnboardingNext () {
+    const next = onboardingStep + 1
+    if (next >= STEPS.length) {
+      finishOnboarding()
+    } else {
+      setOnboardingStep(next)
+    }
+  }
+
+  function handleOnboardingClose () {
+    finishOnboarding()
+  }
+
+  function finishOnboarding () {
+    try {
+      localStorage.setItem(ONBOARDING_KEY, '1')
+    } catch (e) {}
+    setOnboardingStep(STEPS.length)
   }
 
   useEffect(function () {
@@ -251,294 +238,68 @@ export default function App () {
         display: 'flex',
         flexDirection: 'column',
         boxSizing: 'border-box',
-        p: 2,
-        gap: 1.5,
+        p: 1.25,
+        gap: 0.75,
         bgcolor: 'background.default'
       }}>
-        {/* Header */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 1.5,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderRadius: 3,
-            bgcolor: 'background.paper',
-            border: 1,
-            borderColor: 'divider'
-          }}
+        <Header
+          snowRunning={snowRunning}
+          onStart={startSnow}
+          onStop={stopSnow}
+        />
+
+        <Box sx={{
+          flex: 1,
+          overflow: 'hidden',
+          minHeight: 0
+        }}
         >
-          <Stack direction='row' alignItems='center' spacing={1.25}>
+          <Stack spacing={0.75}>
+            <PatternPanel
+              pattern={pattern}
+              festivalTheme={festivalTheme}
+              onPatternChange={handlePatternChange}
+            />
+            <ThemePanel
+              festivalTheme={festivalTheme}
+              onThemeChange={handleFestivalThemeChange}
+            />
             <Box sx={{
-              width: 40,
-              height: 40,
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              bgcolor: 'primary.main',
-              color: '#fff'
-            }}>
-              <AcUnitIcon sx={{ fontSize: 24 }} />
-            </Box>
-            <Box>
-              <Typography variant='h6' fontWeight={800} lineHeight={1.1}>
-                满屏飘落
-              </Typography>
-              <Typography variant='caption' color='text.secondary'>
-                唯美治愈桌面粒子
-              </Typography>
-            </Box>
-          </Stack>
-          <Button
-            variant={snowRunning ? 'outlined' : 'contained'}
-            color={snowRunning ? 'error' : 'primary'}
-            size='small'
-            startIcon={snowRunning ? <StopIcon /> : <PlayArrowIcon />}
-            onClick={snowRunning ? stopSnow : startSnow}
-            sx={{
-              minWidth: 110,
-              fontWeight: 700,
-              borderRadius: 2,
-              px: 1.5
-            }}
-          >
-            {snowRunning ? '停止' : '开始'}
-          </Button>
-        </Paper>
-
-        {/* 图案选择 */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 1.5,
-            borderRadius: 3,
-            bgcolor: 'background.paper',
-            border: 1,
-            borderColor: 'divider'
-          }}
-        >
-          <Stack direction='row' alignItems='center' spacing={1} mb={1}>
-            <AutoAwesomeIcon fontSize='small' color='primary' />
-            <Typography variant='body2' color='text.secondary' fontWeight={700}>
-              飘落图案
-            </Typography>
-          </Stack>
-          <ToggleButtonGroup
-            value={pattern}
-            exclusive
-            onChange={handlePatternChange}
-            size='small'
-            sx={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-              gap: 0.6,
-              '& .MuiToggleButtonGroup-grouped': {
-                border: 1,
-                borderColor: 'divider',
-                borderRadius: 2,
-                mx: '0 !important',
-                py: 0.6,
-                flexDirection: 'column',
-                gap: 0.25
-              }
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+              alignItems: 'stretch',
+              gap: 0.75
             }}
-          >
-            {PATTERN_OPTIONS.map(function (item) {
-              return (
-                <ToggleButton
-                  key={item.value}
-                  value={item.value}
-                  sx={{
-                    fontSize: '0.7rem',
-                    lineHeight: 1.1,
-                    '& .MuiSvgIcon-root': { fontSize: '1.1rem' }
-                  }}
-                >
-                  {item.icon}
-                  {item.label}
-                </ToggleButton>
-              )
-            })}
-          </ToggleButtonGroup>
-        </Paper>
-
-        {/* 节日主题 */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 1.5,
-            borderRadius: 3,
-            bgcolor: 'background.paper',
-            border: 1,
-            borderColor: 'divider'
-          }}
-        >
-          <Stack direction='row' alignItems='center' spacing={1} mb={1}>
-            <FavoriteIcon fontSize='small' color='error' />
-            <Typography variant='body2' color='text.secondary' fontWeight={700}>
-              节日主题
-            </Typography>
-          </Stack>
-          <ToggleButtonGroup
-            value={festivalTheme}
-            exclusive
-            onChange={handleFestivalThemeChange}
-            size='small'
-            fullWidth
-            sx={{
-              '& .MuiToggleButtonGroup-grouped': {
-                border: 1,
-                borderColor: 'divider',
-                borderRadius: 2,
-                mx: '0 !important'
-              }
-            }}
-          >
-            {THEME_OPTIONS.map(function (item) {
-              return (
-                <ToggleButton key={item.value} value={item.value} sx={{ gap: 0.5 }}>
-                  {item.icon}
-                  {item.label}
-                </ToggleButton>
-              )
-            })}
-          </ToggleButtonGroup>
-        </Paper>
-
-        {/* 环境设置 */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 1.5,
-            borderRadius: 3,
-            bgcolor: 'background.paper',
-            border: 1,
-            borderColor: 'divider'
-          }}
-        >
-          <Stack direction='row' alignItems='center' spacing={1} mb={1}>
-            <SpeedIcon fontSize='small' color='success' />
-            <Typography variant='body2' color='text.secondary' fontWeight={700}>
-              环境
-            </Typography>
-          </Stack>
-
-          <Stack spacing={1.25}>
-            <Box>
-              <Stack direction='row' justifyContent='space-between' alignItems='center' mb={0.5}>
-                <Typography variant='caption' color='text.secondary' fontWeight={600}>
-                  密度
-                </Typography>
-                <Typography variant='caption' color='primary' fontWeight={700}>
-                  {density} 片
-                </Typography>
-              </Stack>
-              <ToggleButtonGroup
-                value={intensity}
-                exclusive
-                onChange={handleIntensityChange}
-                size='small'
-                fullWidth
-                sx={{ mb: 0.75 }}
-              >
-                <ToggleButton value='light'>小雪</ToggleButton>
-                <ToggleButton value='normal'>中雪</ToggleButton>
-                <ToggleButton value='heavy'>大雪</ToggleButton>
-              </ToggleButtonGroup>
-              <Slider
-                value={density}
-                onChange={handleDensityChange}
-                min={30}
-                max={380}
-                step={10}
-                size='small'
+            >
+              <EnvironmentPanel
+                density={density}
+                wind={wind}
+                intensity={intensity}
+                onDensityChange={handleDensityChange}
+                onWindChange={handleWindChange}
+                onIntensityChange={handleIntensityChange}
+              />
+              <InteractionPanel
+                interaction={interaction}
+                burstOnClick={burstOnClick}
+                snowAccumulation={snowAccumulation}
+                mouseVortex={mouseVortex}
+                onInteractionChange={handleInteractionChange}
+                onBurstChange={handleBurstChange}
+                onSnowAccumulationChange={handleSnowAccumulationChange}
+                onMouseVortexChange={handleMouseVortexChange}
               />
             </Box>
-
-            <Box>
-              <Stack direction='row' justifyContent='space-between' alignItems='center' mb={0.5}>
-                <Typography variant='caption' color='text.secondary' fontWeight={600}>
-                  风力
-                </Typography>
-                <Typography variant='caption' color='primary' fontWeight={700}>
-                  {wind.toFixed(1)}
-                </Typography>
-              </Stack>
-              <Stack direction='row' spacing={1} alignItems='center'>
-                <AirIcon fontSize='small' color='disabled' />
-                <Slider
-                  value={wind}
-                  onChange={handleWindChange}
-                  min={0}
-                  max={3}
-                  step={0.1}
-                  size='small'
-                />
-                <WindPowerIcon fontSize='small' color='disabled' />
-              </Stack>
-            </Box>
           </Stack>
-        </Paper>
+        </Box>
 
-        {/* 交互开关 */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 1.5,
-            borderRadius: 3,
-            bgcolor: 'background.paper',
-            border: 1,
-            borderColor: 'divider'
-          }}
-        >
-          <Stack direction='row' alignItems='center' spacing={1} mb={1}>
-            <MouseIcon fontSize='small' color='secondary' />
-            <Typography variant='body2' color='text.secondary' fontWeight={700}>
-              交互
-            </Typography>
-          </Stack>
-          <Box sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-            gap: 0.5
-          }}
-          >
-            <FormControlLabel
-              control={<Switch
-                checked={interaction}
-                onChange={handleInteractionChange}
-                size='small'
-              />}
-              label={<Typography variant='caption'>鼠标推开</Typography>}
-            />
-            <FormControlLabel
-              control={<Switch
-                checked={burstOnClick}
-                onChange={handleBurstChange}
-                size='small'
-              />}
-              label={<Typography variant='caption'>点击绽放</Typography>}
-            />
-            <FormControlLabel
-              control={<Switch
-                checked={snowAccumulation}
-                onChange={handleSnowAccumulationChange}
-                size='small'
-              />}
-              label={<Typography variant='caption'>积雪融化</Typography>}
-            />
-            <FormControlLabel
-              control={<Switch
-                checked={mouseVortex}
-                onChange={handleMouseVortexChange}
-                size='small'
-              />}
-              label={<Typography variant='caption'>鼠标漩涡</Typography>}
-            />
-          </Box>
-        </Paper>
+        {onboardingStep < STEPS.length && (
+          <OnboardingTooltip
+            step={onboardingStep}
+            onNext={handleOnboardingNext}
+            onClose={handleOnboardingClose}
+          />
+        )}
       </Box>
     </ThemeProvider>
   )
