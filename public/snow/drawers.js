@@ -273,80 +273,99 @@ export function drawButterfly (r) {
 }
 
 export function drawPumpkin (r) {
-  // 🎃 南瓜灯：圆润主体 + 瓜蒂 + 三角眼/鼻 + 锯齿微笑嘴
-  const bodyGrad = ctx.createRadialGradient(-r * 0.2, -r * 0.3, r * 0.1, 0, 0, r * 1.5)
-  bodyGrad.addColorStop(0, '#ffab5c')
-  bodyGrad.addColorStop(0.5, '#ff7f00')
-  bodyGrad.addColorStop(1, '#cc5500')
+  // 🎃 更圆润的南瓜灯：3D 球体渐变 + 柔和肋骨 + 发光表情
+  const bodyGrad = ctx.createRadialGradient(-r * 0.28, -r * 0.32, r * 0.08, 0, 0, r * 1.35)
+  bodyGrad.addColorStop(0, '#ffb84d')
+  bodyGrad.addColorStop(0.35, '#ff8c00')
+  bodyGrad.addColorStop(0.75, '#ff6a00')
+  bodyGrad.addColorStop(1, '#cc4400')
   ctx.fillStyle = bodyGrad
 
-  // 主体
+  // 主体：正圆，更圆润
   ctx.beginPath()
-  ctx.arc(0, r * 0.05, r * 1.15, 0, Math.PI * 2)
+  ctx.arc(0, 0, r * 1.15, 0, Math.PI * 2)
   ctx.fill()
 
-  // 纵向肋骨
-  ctx.strokeStyle = 'rgba(160, 65, 0, 0.4)'
-  ctx.lineWidth = Math.max(0.8, r * 0.15)
+  // 柔和纵向肋骨（若隐若现）
+  ctx.strokeStyle = 'rgba(160, 60, 0, 0.22)'
+  ctx.lineWidth = Math.max(0.6, r * 0.12)
   for (let i = -1; i <= 1; i++) {
     if (i === 0) continue
     ctx.beginPath()
-    ctx.ellipse(i * r * 0.5, r * 0.05, r * 0.45, r * 1.05, 0, 0, Math.PI * 2)
+    ctx.ellipse(i * r * 0.58, 0, r * 0.32, r * 1.08, 0, 0, Math.PI * 2)
     ctx.stroke()
   }
 
   // 外轮廓
-  ctx.strokeStyle = 'rgba(130, 55, 0, 0.75)'
-  ctx.lineWidth = Math.max(1, r * 0.18)
+  ctx.strokeStyle = 'rgba(130, 50, 0, 0.55)'
+  ctx.lineWidth = Math.max(0.8, r * 0.14)
   ctx.beginPath()
-  ctx.arc(0, r * 0.05, r * 1.15, 0, Math.PI * 2)
+  ctx.arc(0, 0, r * 1.15, 0, Math.PI * 2)
   ctx.stroke()
 
   // 瓜蒂
   ctx.fillStyle = '#4a7c2a'
   ctx.beginPath()
-  ctx.ellipse(0, -r * 1.1, r * 0.22, r * 0.22, 0, 0, Math.PI * 2)
+  ctx.roundRect(-r * 0.1, -r * 1.48, r * 0.2, r * 0.48, r * 0.06)
   ctx.fill()
-  ctx.fillRect(-r * 0.1, -r * 1.35, r * 0.2, r * 0.4)
+  ctx.beginPath()
+  ctx.ellipse(0, -r * 1.18, r * 0.24, r * 0.18, 0, 0, Math.PI * 2)
+  ctx.fill()
 
-  // 表情（尺寸足够大时绘制）
+  // 发光表情（尺寸足够大时绘制）
   if (r > 2) {
-    ctx.fillStyle = 'rgba(50, 20, 0, 0.92)'
+    ctx.shadowColor = 'rgba(255, 235, 100, 0.95)'
+    ctx.shadowBlur = r * 2.2
+    ctx.fillStyle = 'rgba(255, 245, 160, 0.98)'
 
-    // 左眼
+    // 左眼（下尖三角，更像南瓜灯）
     ctx.beginPath()
-    ctx.moveTo(-r * 0.32, -r * 0.12)
-    ctx.lineTo(-r * 0.18, -r * 0.38)
-    ctx.lineTo(-r * 0.04, -r * 0.12)
+    ctx.moveTo(-r * 0.34, -r * 0.12)
+    ctx.lineTo(-r * 0.18, -r * 0.48)
+    ctx.lineTo(r * 0.02, -r * 0.12)
     ctx.closePath()
     ctx.fill()
 
     // 右眼
     ctx.beginPath()
-    ctx.moveTo(r * 0.32, -r * 0.12)
-    ctx.lineTo(r * 0.18, -r * 0.38)
-    ctx.lineTo(r * 0.04, -r * 0.12)
+    ctx.moveTo(r * 0.34, -r * 0.12)
+    ctx.lineTo(r * 0.18, -r * 0.48)
+    ctx.lineTo(-r * 0.02, -r * 0.12)
     ctx.closePath()
     ctx.fill()
 
-    // 鼻子
+    // 鼻子（上尖小三角）
     ctx.beginPath()
     ctx.moveTo(0, -r * 0.02)
-    ctx.lineTo(-r * 0.08, r * 0.18)
-    ctx.lineTo(r * 0.08, r * 0.18)
+    ctx.lineTo(-r * 0.09, r * 0.2)
+    ctx.lineTo(r * 0.09, r * 0.2)
     ctx.closePath()
     ctx.fill()
 
-    // 微笑嘴
+    // 嘴巴：宽微笑，露出两颗牙齿
     ctx.beginPath()
-    ctx.moveTo(-r * 0.45, r * 0.22)
-    ctx.lineTo(-r * 0.3, r * 0.42)
-    ctx.lineTo(-r * 0.15, r * 0.28)
-    ctx.lineTo(0, r * 0.45)
-    ctx.lineTo(r * 0.15, r * 0.28)
-    ctx.lineTo(r * 0.3, r * 0.42)
-    ctx.lineTo(r * 0.45, r * 0.22)
-    ctx.quadraticCurveTo(0, r * 0.78, -r * 0.45, r * 0.22)
+    ctx.moveTo(-r * 0.55, r * 0.15)
+    ctx.quadraticCurveTo(-r * 0.28, r * 0.55, 0, r * 0.55)
+    ctx.quadraticCurveTo(r * 0.28, r * 0.55, r * 0.55, r * 0.15)
+    ctx.lineTo(r * 0.42, r * 0.42)
+    ctx.quadraticCurveTo(0, r * 0.72, -r * 0.42, r * 0.42)
+    ctx.closePath()
+    ctx.fill()
+
+    // 牙齿（用南瓜深色遮出）
+    ctx.shadowBlur = 0
+    ctx.fillStyle = 'rgba(180, 70, 0, 0.9)'
+    ctx.beginPath()
+    ctx.moveTo(-r * 0.16, r * 0.42)
+    ctx.lineTo(-r * 0.08, r * 0.65)
+    ctx.lineTo(0, r * 0.42)
+    ctx.closePath()
+    ctx.fill()
+    ctx.beginPath()
+    ctx.moveTo(r * 0.16, r * 0.42)
+    ctx.lineTo(r * 0.08, r * 0.65)
+    ctx.lineTo(0, r * 0.42)
+    ctx.closePath()
     ctx.fill()
   }
 }

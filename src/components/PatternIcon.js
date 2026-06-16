@@ -73,14 +73,21 @@ function FuIcon (props) {
 function PumpkinIcon (props) {
   return (
     <SvgIcon {...props} viewBox='0 0 24 24'>
-      <circle cx='12' cy='13' r='9' fill='currentColor' />
-      <ellipse cx='8.5' cy='13' rx='4' ry='8' fill='currentColor' />
-      <ellipse cx='15.5' cy='13' rx='4' ry='8' fill='currentColor' />
-      <path d='M12 4.5v-2.8' stroke='#5a8a3a' strokeWidth='2.2' strokeLinecap='round' />
-      <polygon points='9.2,10.5 10.5,8.2 11.8,10.5' fill='rgba(60,25,0,0.9)' />
-      <polygon points='14.2,10.5 15.5,8.2 16.8,10.5' fill='rgba(60,25,0,0.9)' />
-      <polygon points='12,11.5 11.2,12.8 12.8,12.8' fill='rgba(60,25,0,0.9)' />
-      <path d='M8 15l1.2 1.2 1.2-1.2 1.2 1.2 1.2-1.2 1.2 1.2 1.2-1.2V16c0 .4-.4.8-.8.8H8.8c-.4 0-.8-.4-.8-.8v-1z' fill='rgba(60,25,0,0.9)' />
+      <defs>
+        <radialGradient id='pumpkinGrad' cx='35%' cy='35%' r='70%'>
+          <stop offset='0%' stopColor='#ffb84d' />
+          <stop offset='50%' stopColor='#ff8c00' />
+          <stop offset='100%' stopColor='#cc4400' />
+        </radialGradient>
+      </defs>
+      <circle cx='12' cy='13' r='9' fill='url(#pumpkinGrad)' />
+      <ellipse cx='8.2' cy='13' rx='3.8' ry='8' fill='url(#pumpkinGrad)' />
+      <ellipse cx='15.8' cy='13' rx='3.8' ry='8' fill='url(#pumpkinGrad)' />
+      <path d='M12 4.5v-2.8' stroke='#4a7c2a' strokeWidth='2.2' strokeLinecap='round' />
+      <polygon points='9,11 10.5,8 12,11' fill='rgba(255,245,160,0.95)' />
+      <polygon points='15,11 16.5,8 18,11' fill='rgba(255,245,160,0.95)' />
+      <polygon points='12,11.5 11.2,13.2 12.8,13.2' fill='rgba(255,245,160,0.95)' />
+      <path d='M8 15c1.2 1 1.8 1.2 2.5 1.2h3c0.7 0 1.3-0.2 2.5-1.2l-0.8 1.5c-0.8 0.8-1.5 1-2.2 1H11c-0.7 0-1.4-0.2-2.2-1L8 15z' fill='rgba(255,245,160,0.95)' />
     </SvgIcon>
   )
 }
